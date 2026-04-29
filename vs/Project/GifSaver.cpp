@@ -204,6 +204,7 @@ public:
       return false;
 
     write_header(w, h);
+    write_loop_extension();
     return true;
   }
 
@@ -234,6 +235,22 @@ private:
       file.put(palette[i][1]);
       file.put(palette[i][2]);
     }
+  }
+
+  void write_loop_extension() {
+
+    file.put(0x21);
+    file.put(0xFF);
+    file.put(11);
+
+    file.write("NETSCAPE2.0", 11);
+
+    file.put(3);
+    file.put(1);
+
+    write16(0);
+
+    file.put(0);
   }
 
   void write_graphics_control(int delay) {
