@@ -13,15 +13,21 @@ bool func_proc_video(FILTER_PROC_VIDEO *video);
 // 設定項目
 //---------------------------------------------------------------------
 FILTER_ITEM_SELECT::ITEM mode_list[] = {
-	{L"Webセーフ(216色) ベイヤー8x8", 0},
-	{L"Webセーフ(216色) ベイヤー4x4", 1},
-	{L"VGA 16色 ベイヤー8x8", 2},
-	{L"VGA 16色 ベイヤー4x4", 3},
+	{L"Webセーフ(216色)", 0},
+	{L"VGA(16色)", 1},
 	{nullptr}
 };
 auto mode = FILTER_ITEM_SELECT(L"カラーモード", 0, mode_list);
 auto strength = FILTER_ITEM_TRACK(L"ディザ強度", 1.0, 0.0, 2.0, 0.01);
-void *items[] = { &mode, &strength, nullptr };
+
+FILTER_ITEM_SELECT::ITEM bayer_list[] = {
+    { L"8x8", 0 },
+    { L"4x4", 1 },
+    { nullptr }
+};
+auto bayer_mode = FILTER_ITEM_SELECT(L"Bayerサイズ", 0, bayer_list);
+
+void* items[] = { &mode, &bayer_mode, &strength, nullptr };
 
 //---------------------------------------------------------------------
 // プラグイン定義
@@ -49,25 +55,49 @@ static const unsigned char palette16[16][3] = {
 };
 
 //---------------------------------------------------------------------
-// Bayer 8x8 行列 (0～63)
+// Bayer 行列
 //---------------------------------------------------------------------
+
+// 8x8
 static const int bayer8x8[8][8] = {
-	{0, 48, 12, 60, 3, 51, 15, 63}, {32, 16, 44, 28, 35, 19, 47, 31},
-	{8, 56, 4, 52, 11, 59, 7, 55},  {40, 24, 36, 20, 43, 27, 39, 23},
-	{2, 50, 14, 62, 1, 49, 13, 61}, {34, 18, 46, 30, 33, 17, 45, 29},
-	{10, 58, 6, 54, 9, 57, 5, 53},  {42, 26, 38, 22, 41, 25, 37, 21}
+	{ 0,48,12,60,3,51,15,63 },
+	{32,16,44,28,35,19,47,31},
+	{ 8,56, 4,52,11,59, 7,55},
+	{40,24,36,20,43,27,39,23},
+	{ 2,50,14,62, 1,49,13,61},
+	{34,18,46,30,33,17,45,29},
+	{10,58, 6,54, 9,57, 5,53},
+	{42,26,38,22,41,25,37,21}
 };
+
+// 4x4
+static const int bayer4x4[4][4] = {
+	{ 0, 8, 2,10 },
+	{12, 4,14, 6 },
+	{ 3,11, 1, 9 },
+	{15, 7,13, 5 }
+};
+
+inline double get_bayer(int x, int y, int mode) {
+	// Bayer値を -0.5 ～ +0.5 に正規化
+	if (mode == 0) {
+		// 8x8
+		return (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
+	} else {
+		// 4x4
+		return (bayer4x4[y & 3][x & 3] / 16.0) - 0.5;
+	}
+}
 
 //---------------------------------------------------------------------
 // Webセーフ量子化 (ディザ込み)
 //---------------------------------------------------------------------
 inline unsigned char quantize_websafe(int value, int x, int y,
-									  double strength_val) {
-	// Bayer値を -0.5 ～ +0.5 に正規化
-	double d = (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
+                                      double s, int bayer_mode) {
+  double d = get_bayer(x, y, bayer_mode);
 
 	// ディザ適用
-	double v = value + d * 51.0 * strength_val;
+	double v = value + d * 51.0 * s;
 
 	// 0～255 clamp
 	v = std::clamp(v, 0.0, 255.0);
@@ -92,10 +122,11 @@ inline int color_dist(int r1, int g1, int b1, int r2, int g2, int b2) {
 	return dr * dr * 3 + dg * dg * 6 + db * db * 1;
 }
 
-inline void quantize_vga16(int r, int g, int b, int x, int y, double strength,
-						   unsigned char &out_r, unsigned char &out_g,
-						   unsigned char &out_b) {
-	double d = (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
+inline void quantize_vga16(int r, int g, int b, int x, int y,
+  double strength, int bayer_mode,
+	unsigned char &out_r, unsigned char &out_g,
+	unsigned char &out_b) {
+  double d = get_bayer(x, y, bayer_mode);
 
 	r = (int)(r + d * 64.0 * strength);
 	g = (int)(g + d * 64.0 * strength);
@@ -137,20 +168,21 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 
 	auto p = buffer.get();
 	double s = strength.value;
+	int bm = bayer_mode.value;
 
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
 
 			if (mode.value == 0) {
 				// Webセーフ
-				p->r = quantize_websafe(p->r, x, y, s);
-				p->g = quantize_websafe(p->g, x, y, s);
-				p->b = quantize_websafe(p->b, x, y, s);
+				p->r = quantize_websafe(p->r, x, y, s, bm);
+				p->g = quantize_websafe(p->g, x, y, s, bm);
+				p->b = quantize_websafe(p->b, x, y, s, bm);
 			}
 			else {
 				// VGA16
 				unsigned char r, g, b;
-				quantize_vga16(p->r, p->g, p->b, x, y, s, r, g, b);
+				quantize_vga16(p->r, p->g, p->b, x, y, s, bm, r, g, b);
 				p->r = r;
 				p->g = g;
 				p->b = b;
