@@ -1,117 +1,154 @@
-
 //----------------------------------------------------------------------------------
-//	サンプルフィルタプラグイン(フィルタ効果) for AviUtl ExEdit2
+//  Bayer Dithering + Web Safe Color Filter for AviUtl ExEdit2
 //----------------------------------------------------------------------------------
-#include <windows.h>
-#include <memory>
 #include <algorithm>
+#include <memory>
+#include <windows.h>
 
 #include "filter2.h"
 
-bool func_proc_video(FILTER_PROC_VIDEO* video);
-bool func_proc_audio(FILTER_PROC_AUDIO* audio);
+bool func_proc_video(FILTER_PROC_VIDEO *video);
 
 //---------------------------------------------------------------------
-//	フィルタ設定項目定義
+// 設定項目
 //---------------------------------------------------------------------
-auto luminance = FILTER_ITEM_TRACK(L"明るさ", 1.0, 0.0, 2.0, 0.01);
-FILTER_ITEM_SELECT::ITEM component_list[] = { { L"R成分のみ", 1 }, { L"G成分のみ", 2 }, { L"B成分のみ", 4 }, { L"RGB成分", 7 }, { nullptr } };
-auto component = FILTER_ITEM_SELECT(L"対象", 7, component_list);
-auto volume = FILTER_ITEM_TRACK(L"音量", 1.0, 0.0, 2.0, 0.01);
-auto mono = FILTER_ITEM_CHECK(L"モノラル化", false);
-void* items[] = { &luminance, &component, &volume, &mono, nullptr };
+FILTER_ITEM_SELECT::ITEM mode_list[] = {
+    {L"Webセーフ(216色)", 0}, {L"VGA 16色", 1}, {nullptr}};
+auto mode = FILTER_ITEM_SELECT(L"カラーモード", 0, mode_list);
+auto strength = FILTER_ITEM_TRACK(L"ディザ強度", 1.0, 0.0, 2.0, 0.01);
+void *items[] = {&mode, &strength, nullptr};
 
 //---------------------------------------------------------------------
-//	フィルタプラグイン構造体定義
+// プラグイン定義
 //---------------------------------------------------------------------
-FILTER_PLUGIN_TABLE filter_plugin_table = {
-	FILTER_PLUGIN_TABLE::FLAG_VIDEO | FILTER_PLUGIN_TABLE::FLAG_AUDIO, //	フラグ
-	L"メディアフィルタ(osakana4242)",					// プラグインの名前
-	L"サンプルosakana4242",									// ラベルの初期値 (nullptrならデフォルトのラベルになります)
-	L"Sample MediaFilter version 2.00 By ＫＥＮくん",	// プラグインの情報
-	items,											// 設定項目の定義 (FILTER_ITEM_XXXポインタを列挙してnull終端したリストへのポインタ)
-	func_proc_video,								// 画像フィルタ処理関数へのポインタ (FLAG_VIDEOが有効の時のみ呼ばれます)
-	func_proc_audio									// 音声フィルタ処理関数へのポインタ (FLAG_AUDIOが有効の時のみ呼ばれます)
-};
+FILTER_PLUGIN_TABLE filter_plugin_table = {FILTER_PLUGIN_TABLE::FLAG_VIDEO,
+                                           L"WebSafe+BayerDither(osakana)",
+                                           L"WebSafeDither",
+                                           L"Bayer Dithering + WebSafe Color",
+                                           items,
+                                           func_proc_video,
+                                           nullptr};
+
+EXTERN_C __declspec(dllexport) FILTER_PLUGIN_TABLE *GetFilterPluginTable(void) {
+  return &filter_plugin_table;
+}
+
+// パレットVGA
+static const unsigned char palette16[16][3] = {
+    {0, 0, 0},       {128, 0, 0},   {0, 128, 0},   {128, 128, 0},
+    {0, 0, 128},     {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
+    {128, 128, 128}, {255, 0, 0},   {0, 255, 0},   {255, 255, 0},
+    {0, 0, 255},     {255, 0, 255}, {0, 255, 255}, {255, 255, 255}};
 
 //---------------------------------------------------------------------
-//	プラグインDLL初期化関数 (未定義なら呼ばれません)
+// Bayer 8x8 行列 (0～63)
 //---------------------------------------------------------------------
-EXTERN_C __declspec(dllexport) bool InitializePlugin(DWORD version) { // versionは本体のバージョン番号
-	return true;
+static const int bayer8x8[8][8] = {
+    {0, 48, 12, 60, 3, 51, 15, 63}, {32, 16, 44, 28, 35, 19, 47, 31},
+    {8, 56, 4, 52, 11, 59, 7, 55},  {40, 24, 36, 20, 43, 27, 39, 23},
+    {2, 50, 14, 62, 1, 49, 13, 61}, {34, 18, 46, 30, 33, 17, 45, 29},
+    {10, 58, 6, 54, 9, 57, 5, 53},  {42, 26, 38, 22, 41, 25, 37, 21}};
+
+//---------------------------------------------------------------------
+// Webセーフ量子化 (ディザ込み)
+//---------------------------------------------------------------------
+inline unsigned char quantize_websafe(int value, int x, int y,
+                                      double strength_val) {
+  // Bayer値を -0.5 ～ +0.5 に正規化
+  double d = (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
+
+  // ディザ適用
+  double v = value + d * 51.0 * strength_val;
+
+  // 0～255 clamp
+  v = std::clamp(v, 0.0, 255.0);
+
+  // 0～5 に量子化
+  int level = (int)(v / 51.0 + 0.5);
+  level = std::clamp(level, 0, 5);
+
+  // 0,51,102,...255 に戻す
+  return (unsigned char)(level * 51);
 }
 
 //---------------------------------------------------------------------
-//	プラグインDLL解放関数 (未定義なら呼ばれません)
+// VGA16量子化 (ディザ込み)
 //---------------------------------------------------------------------
-EXTERN_C __declspec(dllexport) void UninitializePlugin() {
+
+inline int color_dist(int r1, int g1, int b1, int r2, int g2, int b2) {
+  int dr = r1 - r2;
+  int dg = g1 - g2;
+  int db = b1 - b2;
+  return dr * dr + dg * dg + db * db;
+}
+
+inline void quantize_vga16(int r, int g, int b, int x, int y, double strength,
+                           unsigned char &out_r, unsigned char &out_g,
+                           unsigned char &out_b) {
+  double d = (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
+
+  r = (int)(r + d * 64.0 * strength);
+  g = (int)(g + d * 64.0 * strength);
+  b = (int)(b + d * 64.0 * strength);
+
+  r = std::clamp(r, 0, 255);
+  g = std::clamp(g, 0, 255);
+  b = std::clamp(b, 0, 255);
+
+  int best = 0;
+  int best_dist = INT_MAX;
+
+  for (int i = 0; i < 16; i++) {
+    int pr = palette16[i][0];
+    int pg = palette16[i][1];
+    int pb = palette16[i][2];
+
+    int dist = color_dist(r, g, b, pr, pg, pb);
+    if (dist < best_dist) {
+      best_dist = dist;
+      best = i;
+    }
+  }
+
+  out_r = palette16[best][0];
+  out_g = palette16[best][1];
+  out_b = palette16[best][2];
 }
 
 //---------------------------------------------------------------------
-//	フィルタ構造体のポインタを渡す関数
+// 画像処理
 //---------------------------------------------------------------------
-EXTERN_C __declspec(dllexport) FILTER_PLUGIN_TABLE* GetFilterPluginTable(void) {
-	return &filter_plugin_table;
-}
+bool func_proc_video(FILTER_PROC_VIDEO *video) {
+  auto w = video->object->width;
+  auto h = video->object->height;
 
-//---------------------------------------------------------------------
-//	画像フィルタ処理
-//---------------------------------------------------------------------
-bool func_proc_video(FILTER_PROC_VIDEO* video) {
-	auto w = video->object->width;
-	auto h = video->object->height;
-	auto buffer = std::make_unique<PIXEL_RGBA[]>(w * h);
-	video->get_image_data(buffer.get());
+  auto buffer = std::make_unique<PIXEL_RGBA[]>(w * h);
+  video->get_image_data(buffer.get());
 
-	// 指定のRGB成分の明るさを調整
-	auto r = (component.value & 1) ? luminance.value : 1.0;
-	auto g = (component.value & 2) ? luminance.value : 1.0;
-	auto b = (component.value & 4) ? luminance.value : 1.0;
-	auto p = buffer.get();
-	for (int y = 0; y < h; y++) {
-		for (int x = 0; x < w; x++) {
-			p->r = (unsigned char)std::clamp(p->r * r, 0.0, 255.0);
-			p->g = (unsigned char)std::clamp(p->g * g, 0.0, 255.0);
-			p->b = (unsigned char)std::clamp(p->b * b, 0.0, 255.0);
-			p++;
-		}
-	}
+  auto p = buffer.get();
+  double s = strength.value;
 
-	video->set_image_data(buffer.get(), w, h);
-	return true;
-}
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
 
-//---------------------------------------------------------------------
-//	音声フィルタ処理
-//---------------------------------------------------------------------
-bool func_proc_audio(FILTER_PROC_AUDIO* audio) {
-	auto num = audio->object->sample_num;
-	auto buffer0 = std::make_unique<float[]>(num);
-	auto buffer1 = std::make_unique<float[]>(num);
-	audio->get_sample_data(buffer0.get(), 0);
-	audio->get_sample_data(buffer1.get(), 1);
+      if (mode.value == 0) {
+        // Webセーフ
+        p->r = quantize_websafe(p->r, x, y, s);
+        p->g = quantize_websafe(p->g, x, y, s);
+        p->b = quantize_websafe(p->b, x, y, s);
+      } else {
+        // VGA16
+        unsigned char r, g, b;
+        quantize_vga16(p->r, p->g, p->b, x, y, s, r, g, b);
+        p->r = r;
+        p->g = g;
+        p->b = b;
+      }
 
-	// 音量を調整
-	auto v = (float)volume.value;
-	auto p0 = buffer0.get();
-	auto p1 = buffer1.get();
-	for (int i = 0; i < num; i++) {
-		*p0++ *= v;
-		*p1++ *= v;
-	}
+      p++;
+    }
+  }
 
-	// モノラル化
-	p0 = buffer0.get();
-	p1 = buffer1.get();
-	if (mono.value) {
-		for (int i = 0; i < num; i++) {
-			*p0++ += *p1++;
-		}
-		audio->set_sample_data(buffer0.get(), 0);
-		audio->set_sample_data(buffer0.get(), 1);
-	} else {
-		audio->set_sample_data(buffer0.get(), 0);
-		audio->set_sample_data(buffer1.get(), 1);
-	}
-	return true;
+  video->set_image_data(buffer.get(), w, h);
+  return true;
 }
