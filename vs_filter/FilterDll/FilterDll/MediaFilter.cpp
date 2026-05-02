@@ -26,8 +26,8 @@ void* items[] = { &luminance, &component, &volume, &mono, nullptr };
 //---------------------------------------------------------------------
 FILTER_PLUGIN_TABLE filter_plugin_table = {
 	FILTER_PLUGIN_TABLE::FLAG_VIDEO | FILTER_PLUGIN_TABLE::FLAG_AUDIO, //	フラグ
-	L"メディアフィルタ(sample)",					// プラグインの名前
-	L"サンプル",									// ラベルの初期値 (nullptrならデフォルトのラベルになります)
+	L"メディアフィルタ(osakana4242)",					// プラグインの名前
+	L"サンプルosakana4242",									// ラベルの初期値 (nullptrならデフォルトのラベルになります)
 	L"Sample MediaFilter version 2.00 By ＫＥＮくん",	// プラグインの情報
 	items,											// 設定項目の定義 (FILTER_ITEM_XXXポインタを列挙してnull終端したリストへのポインタ)
 	func_proc_video,								// 画像フィルタ処理関数へのポインタ (FLAG_VIDEOが有効の時のみ呼ばれます)
