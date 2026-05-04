@@ -37,9 +37,9 @@ LPCWSTR func_get_config_text();
 //---------------------------------------------------------------------
 OUTPUT_PLUGIN_TABLE output_plugin_table = {
 	OUTPUT_PLUGIN_TABLE::FLAG_VIDEO | OUTPUT_PLUGIN_TABLE::FLAG_AUDIO, //	フラグ
-	L"AVI File Saver2 (sample)(osakana)ほげ",					// プラグインの名前
-	L"AviFile (*.avi)\0*.avi\0",					// 出力ファイルのフィルタ
-	L"Sample AVI File Saver2 version 2.01 By ＫＥＮくん",	// プラグインの情報
+	L"GIF File Saver osakana4242",					// プラグインの名前
+	L"GifFile (*.gif)\0*.gif\0",					// 出力ファイルのフィルタ
+	L"GIF File Saver version 1.00 By 三川おさかな",	// プラグインの情報
 	func_output,									// 出力時に呼ばれる関数へのポインタ
 	func_config,									// 出力設定のダイアログを要求された時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
 	func_get_config_text,							// 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
