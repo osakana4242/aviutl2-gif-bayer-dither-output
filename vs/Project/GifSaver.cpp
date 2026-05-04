@@ -61,11 +61,25 @@ static const wchar_t* g_mode_display_names[] = {
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
 	"mode name mismatch");
 
+enum class BayerMode {
+	Bayer8x8 = 0,
+	Bayer4x4,
+	Count,
+};
+
+static const wchar_t* g_bayer_display_names[] = {
+	L"Bayer 8x8",
+	L"Bayer 4x4",
+};
+
+static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
+	"bayer name mismatch");
+
 // 設定構造体
 struct CONFIG {
 	ColorMode mode = ColorMode::RGB8;
-	int bayer = 1;       // 0=8x8, 1=4x4
-	double strength = 1.0;
+	BayerMode bayer = BayerMode::Bayer4x4;
+	double strength = 2.0;
 };
 
 static CONFIG g_config;
@@ -111,14 +125,17 @@ static const int bayer4x4[4][4] = {
 	{15, 7,13, 5 }
 };
 
-
 inline double get_bayer(int x, int y) {
-	if (g_config.bayer == 0) {
+	switch (g_config.bayer) {
+	case BayerMode::Bayer8x8:
 		return (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
-	} else {
+
+	case BayerMode::Bayer4x4:
 		return (bayer4x4[y & 3][x & 3] / 16.0) - 0.5;
 	}
+	return 0.0; // 保険
 }
+
 
 inline unsigned char quantize_websafe(int v, int x, int y) {
 	double d = get_bayer(x, y);
@@ -414,13 +431,15 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			SendMessageW(hMode, CB_ADDSTRING, 0,
 				(LPARAM)g_mode_display_names[i]);
 		}
-		SendMessageW(hMode, CB_SETCURSEL, 0, 0);
+		SendMessageW(hMode, CB_SETCURSEL, (int)g_config.mode, 0);
 
 		// Bayer
 		HWND hBayer = GetDlgItem(hDlg, IDC_BAYER);
-		SendMessageW(hBayer, CB_ADDSTRING, 0, (LPARAM)L"Bayer 8x8");
-		SendMessageW(hBayer, CB_ADDSTRING, 0, (LPARAM)L"Bayer 4x4");
-		SendMessageW(hBayer, CB_SETCURSEL, 0, 0);
+		for (int i = 0; i < (int)BayerMode::Count; i++) {
+			SendMessageW(hBayer, CB_ADDSTRING, 0,
+				(LPARAM)g_bayer_display_names[i]);
+		}
+		SendMessageW(hBayer, CB_SETCURSEL, (int)g_config.bayer, 0);
 
 		// スライダー
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
@@ -458,7 +477,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			// モード
 			g_config.mode = (ColorMode)SendMessageW(GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
 			// Bayer
-			g_config.bayer = SendMessageW(GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
+			g_config.bayer = (BayerMode)SendMessageW(GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
 			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
@@ -507,8 +526,7 @@ LPCWSTR func_get_config_text() {
 
 	const wchar_t* mode = g_mode_display_names[(int)g_config.mode];
 
-	const wchar_t* bayer =
-		(g_config.bayer == 0) ? L"8x8" : L"4x4";
+	const wchar_t* bayer =g_bayer_display_names[(int)g_config.bayer];
 
 	swprintf_s(buf, L"%s / Bayer %s / 強度 %.2f",
 						 mode, bayer, g_config.strength);
