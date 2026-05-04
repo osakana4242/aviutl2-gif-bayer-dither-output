@@ -9,6 +9,12 @@
 
 #include "output2.h"
 
+// for DialogProc
+#include <commctrl.h>
+#include "resource.h"
+#pragma comment(lib, "comctl32.lib")
+//
+
 bool func_output(OUTPUT_INFO* oip);
 bool func_config(HWND hwnd, HINSTANCE dll_hinst);
 LPCWSTR func_get_config_text();
@@ -272,32 +278,75 @@ bool func_output(OUTPUT_INFO* oip) {
 //---------------------------------------------------------------------
 //	設定ダイアログ
 //---------------------------------------------------------------------
+INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg) {
+
+	case WM_INITDIALOG:
+	{
+		// モード
+		CheckRadioButton(hDlg, IDC_MODE_WEBSAFE, IDC_MODE_VGA16,
+			(g_config.mode == 0) ? IDC_MODE_WEBSAFE : IDC_MODE_VGA16);
+
+		// Bayer
+		CheckRadioButton(hDlg, IDC_BAYER_8, IDC_BAYER_4,
+			(g_config.bayer == 0) ? IDC_BAYER_8 : IDC_BAYER_4);
+
+		// スライダー
+		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
+		SendMessage(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
+		SendMessage(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.strength * 100));
+
+		return TRUE;
+	}
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+
+		case IDOK:
+		{
+			// モード
+			g_config.mode =
+				(IsDlgButtonChecked(hDlg, IDC_MODE_WEBSAFE) == BST_CHECKED) ? 0 : 1;
+
+			// Bayer
+			g_config.bayer =
+				(IsDlgButtonChecked(hDlg, IDC_BAYER_8) == BST_CHECKED) ? 0 : 1;
+
+			// 強度
+			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
+			int pos = (int)SendMessage(slider, TBM_GETPOS, 0, 0);
+			g_config.strength = pos / 100.0;
+
+			EndDialog(hDlg, IDOK);
+			return TRUE;
+		}
+
+		case IDCANCEL:
+			EndDialog(hDlg, IDCANCEL);
+			return TRUE;
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
 bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 
-	int ret = MessageBox(
+	// コモンコントロール初期化（重要）
+	INITCOMMONCONTROLSEX ic{};
+	ic.dwSize = sizeof(ic);
+	ic.dwICC = ICC_BAR_CLASSES;
+	InitCommonControlsEx(&ic);
+
+	INT_PTR ret = DialogBox(
+		dll_hinst,
+		MAKEINTRESOURCE(IDD_CONFIG),
 		hwnd,
-		L"モード切替:\nYES = WebSafe\nNO = VGA16",
-		L"カラーモード",
-		MB_YESNOCANCEL
+		ConfigDlgProc
 	);
 
-	if (ret == IDCANCEL) return false;
-
-	g_config.mode = (ret == IDYES) ? 0 : 1;
-
-	ret = MessageBox(
-		hwnd,
-		L"Bayerサイズ:\nYES = 8x8\nNO = 4x4",
-		L"Bayer",
-		MB_YESNO
-	);
-
-	g_config.bayer = (ret == IDYES) ? 0 : 1;
-
-	// 強度は固定でもいいけど一応変更
-	g_config.strength = (g_config.mode == 0) ? 1.0 : 0.8;
-
-	return true;
+	return (ret == IDOK);
 }
 
 //---------------------------------------------------------------------
