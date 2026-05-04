@@ -331,23 +331,28 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 	case WM_INITDIALOG:
 	{
+
 		// モード
-		CheckRadioButton(hDlg, IDC_MODE_WEBSAFE, IDC_MODE_VGA16,
-			(g_config.mode == 0) ? IDC_MODE_WEBSAFE : IDC_MODE_VGA16);
+		HWND hMode = GetDlgItem(hDlg, IDC_MODE);
+		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"WebSafe(216)");
+		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"VGA16");
+		SendMessageW(hMode, CB_SETCURSEL, 0, 0);
 
 		// Bayer
-		CheckRadioButton(hDlg, IDC_BAYER_8, IDC_BAYER_4,
-			(g_config.bayer == 0) ? IDC_BAYER_8 : IDC_BAYER_4);
+		HWND hBayer = GetDlgItem(hDlg, IDC_BAYER);
+		SendMessageW(hBayer, CB_ADDSTRING, 0, (LPARAM)L"Bayer 8x8");
+		SendMessageW(hBayer, CB_ADDSTRING, 0, (LPARAM)L"Bayer 4x4");
+		SendMessageW(hBayer, CB_SETCURSEL, 0, 0);
 
 		// スライダー
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
-		SendMessage(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
-		SendMessage(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.strength * 100));
-		SendMessage(slider, TBM_SETTICFREQ, 10, 0); // 0.1刻みの目盛り
+		SendMessageW(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
+		SendMessageW(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.strength * 100));
+		SendMessageW(slider, TBM_SETTICFREQ, 10, 0); // 0.1刻みの目盛り
 
 		wchar_t buf[32];
 		swprintf_s(buf, L"%.2f", g_config.strength);
-		SetDlgItemText(hDlg, IDC_STRENGTH_TEXT, buf);
+		SetDlgItemTextW(hDlg, IDC_STRENGTH_TEXT, buf);
 
 		return TRUE;
 	}
@@ -355,13 +360,13 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 	case WM_HSCROLL:
 	{
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
-		int pos = (int)SendMessage(slider, TBM_GETPOS, 0, 0);
+		int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
 
 		double val = pos / 100.0;
 
 		wchar_t buf[32];
 		swprintf_s(buf, L"%.2f", val);
-		SetDlgItemText(hDlg, IDC_STRENGTH_TEXT, buf);
+		SetDlgItemTextW(hDlg, IDC_STRENGTH_TEXT, buf);
 
 		return TRUE;
 	}
@@ -371,17 +376,15 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 		case IDOK:
 		{
-			// モード
-			g_config.mode =
-				(IsDlgButtonChecked(hDlg, IDC_MODE_WEBSAFE) == BST_CHECKED) ? 0 : 1;
 
+			// モード
+			g_config.mode = SendMessageW(GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
 			// Bayer
-			g_config.bayer =
-				(IsDlgButtonChecked(hDlg, IDC_BAYER_8) == BST_CHECKED) ? 0 : 1;
+			g_config.bayer = SendMessageW(GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
 			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
-			int pos = (int)SendMessage(slider, TBM_GETPOS, 0, 0);
+			int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
 			g_config.strength = pos / 100.0;
 
 			EndDialog(hDlg, IDOK);

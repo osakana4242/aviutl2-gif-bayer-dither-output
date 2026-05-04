@@ -15,12 +15,8 @@
 
 #define IDD_CONFIG        100
 
-#define IDC_MODE_WEBSAFE  101
-#define IDC_MODE_VGA16    102
+#define IDC_MODE          101
+#define IDC_BAYER         102
 
-#define IDC_BAYER_8       103
-#define IDC_BAYER_4       104
-
-#define IDC_STRENGTH      105
-
-#define IDC_STRENGTH_TEXT 106
+#define IDC_STRENGTH      103
+#define IDC_STRENGTH_TEXT 104
