@@ -295,12 +295,23 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
 		SendMessage(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
 		SendMessage(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.strength * 100));
+		SendMessage(slider, TBM_SETTICFREQ, 10, 0); // 0.1刻みの目盛り
 
 		wchar_t buf[32];
 		swprintf_s(buf, L"%.2f", g_config.strength);
 		SetDlgItemText(hDlg, IDC_STRENGTH_TEXT, buf);
 
 		return TRUE;
+	}
+
+	case WM_CTLCOLORSTATIC:
+	{
+		// テキストの背景をグレーではなく透けさせる.
+		if ((HWND)lParam == GetDlgItem(hDlg, IDC_STRENGTH_TEXT)) {
+			SetBkMode((HDC)wParam, TRANSPARENT);
+			return (INT_PTR)GetStockObject(NULL_BRUSH);
+		}
+		break;
 	}
 
 	case WM_HSCROLL:
