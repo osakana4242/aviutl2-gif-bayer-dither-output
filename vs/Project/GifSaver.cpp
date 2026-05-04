@@ -45,14 +45,33 @@ OUTPUT_PLUGIN_TABLE output_plugin_table = {
 	func_get_config_text,							// 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
 };
 
+enum class ColorMode {
+	WebSafe = 0,
+	VGA16   = 1,
+	RGB8    = 2,
+};
+
 // 設定構造体
 struct CONFIG {
-	int mode = 0;        // 0=WebSafe, 1=VGA16
+	ColorMode mode = ColorMode::RGB8;
 	int bayer = 0;       // 0=8x8, 1=4x4
 	double strength = 1.0;
 };
 
 static CONFIG g_config;
+
+// パレット RGB8
+static const unsigned char palette8[8][3] = {
+	{0, 0, 0},
+	{0, 0, 255},
+	{0, 255, 0},
+	{0, 255, 255},
+	{255, 0, 0},
+	{255, 0, 255},
+	{255, 255, 0},
+	{255, 255, 255}
+};
+
 
 // パレットVGA
 static const unsigned char palette16[16][3] = {
@@ -177,6 +196,30 @@ inline uint8_t quantize_vga16_index(int r, int g, int b, int x, int y) {
 	return (uint8_t)best;
 }
 
+inline uint8_t quantize_rgb8_index(int r, int g, int b, int x, int y) {
+	double d = get_bayer(x, y);
+
+	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
+	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
+	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
+
+	int best = 0;
+	int best_dist = INT_MAX;
+
+	for (int i = 0; i < 8; i++) {
+		int dr = r - palette8[i][0];
+		int dg = g - palette8[i][1];
+		int db = b - palette8[i][2];
+		int dist = dr*dr + dg*dg + db*db;
+
+		if (dist < best_dist) {
+			best_dist = dist;
+			best = i;
+		}
+	}
+	return (uint8_t)best;
+}
+
 void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 	int stride = w * 3;
 
@@ -193,10 +236,19 @@ void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 
 			uint8_t idx;
 
-			if (g_config.mode == 0) {
+
+
+			switch (g_config.mode)
+			{
+			case ColorMode::WebSafe:
 				idx = quantize_websafe_index(r, g, b, x, y);
-			} else {
+				break;
+			case ColorMode::VGA16:
 				idx = quantize_vga16_index(r, g, b, x, y);
+				break;
+			case ColorMode::RGB8:
+				idx = quantize_rgb8_index(r, g, b, x, y);
+				break;
 			}
 
 			dst[y * w + x] = idx;
@@ -206,29 +258,43 @@ void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 
 
 ColorMapObject* create_palette() {
-	if (g_config.mode == 0) {
+	switch (g_config.mode) {
+	case ColorMode::WebSafe: {
 		auto* map = GifMakeMapObject(256, NULL);
 
 		for (int r = 0; r < 6; r++)
-		for (int g = 0; g < 6; g++)
-		for (int b = 0; b < 6; b++) {
-			int i = r*36 + g*6 + b;
-			map->Colors[i].Red   = r * 51;
-			map->Colors[i].Green = g * 51;
-			map->Colors[i].Blue  = b * 51;
-		}
+			for (int g = 0; g < 6; g++)
+				for (int b = 0; b < 6; b++) {
+					int i = r * 36 + g * 6 + b;
+					map->Colors[i].Red = r * 51;
+					map->Colors[i].Green = g * 51;
+					map->Colors[i].Blue = b * 51;
+				}
 
 		return map;
 	}
-	else {
+	case ColorMode::VGA16:
+	{
 		auto* map = GifMakeMapObject(16, NULL);
 
 		for (int i = 0; i < 16; i++) {
-			map->Colors[i].Red   = palette16[i][0];
+			map->Colors[i].Red = palette16[i][0];
 			map->Colors[i].Green = palette16[i][1];
-			map->Colors[i].Blue  = palette16[i][2];
+			map->Colors[i].Blue = palette16[i][2];
 		}
 		return map;
+	}
+	case ColorMode::RGB8:
+	{
+		auto* map = GifMakeMapObject(8, NULL);
+
+		for (int i = 0; i < 8; i++) {
+			map->Colors[i].Red = palette8[i][0];
+			map->Colors[i].Green = palette8[i][1];
+			map->Colors[i].Blue = palette8[i][2];
+		}
+		return map;
+	}
 	}
 }
 
@@ -336,6 +402,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		HWND hMode = GetDlgItem(hDlg, IDC_MODE);
 		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"WebSafe(216)");
 		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"VGA16");
+		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"RGB8");
 		SendMessageW(hMode, CB_SETCURSEL, 0, 0);
 
 		// Bayer
@@ -378,7 +445,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		{
 
 			// モード
-			g_config.mode = SendMessageW(GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
+			g_config.mode = (ColorMode)SendMessageW(GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
 			// Bayer
 			g_config.bayer = SendMessageW(GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
@@ -419,6 +486,7 @@ bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 	return (ret == IDOK);
 }
 
+
 //---------------------------------------------------------------------
 //	出力設定のテキスト情報 (設定ボタンの隣に表示される)
 //---------------------------------------------------------------------
@@ -427,7 +495,9 @@ LPCWSTR func_get_config_text() {
 	static wchar_t buf[256];
 
 	const wchar_t* mode =
-		(g_config.mode == 0) ? L"WebSafe" : L"VGA16";
+		(g_config.mode == ColorMode::WebSafe) ? L"WebSafe" :
+		(g_config.mode == ColorMode::VGA16) ? L"VGA16" :
+		L"RGB8";
 
 	const wchar_t* bayer =
 		(g_config.bayer == 0) ? L"8x8" : L"4x4";
