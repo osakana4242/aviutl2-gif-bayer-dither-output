@@ -11,7 +11,11 @@ This module is used to hash the GIF codes during encoding.
 
 *****************************************************************************/
 
+#ifdef _WIN32
+// unistd使う処理を無効化 or スタブ化
+#else
 #include <unistd.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <fcntl.h>

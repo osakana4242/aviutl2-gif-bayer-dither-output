@@ -7,8 +7,12 @@ if you only require one of read and write capability, only one of these
 two modules will be linked.  Preserve this property!
 
 *****************************************************************************/
-
+#define _CRT_SECURE_NO_WARNINGS
+#ifdef _WIN32
+// unistd使う処理を無効化 or スタブ化
+#else
 #include <unistd.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,6 +21,15 @@ two modules will be linked.  Preserve this property!
 
 #ifdef _WIN32
 #include <io.h>
+#include <fcntl.h>
+#include <stdio.h>
+
+#define open    _open
+#define close   _close
+#define write   _write
+#define read    _read
+#define fdopen  _fdopen
+
 #else
 #include <sys/types.h>
 #endif /* _WIN32 */

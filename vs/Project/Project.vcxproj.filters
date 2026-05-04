@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ソース ファイル\giflib">
+      <UniqueIdentifier>{6d2b87b1-3a84-423d-b628-f5f69cef6a4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\giflib\lib">
+      <UniqueIdentifier>{a152873d-b932-4584-889a-b5ce4d20300d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -27,6 +33,15 @@
     <ClInclude Include="resource.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="lib\giflib\lib\gif_lib.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\giflib\lib\gif_lib_private.h">
+      <Filter>ソース ファイル\giflib\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\giflib\lib\gif_hash.h">
+      <Filter>ソース ファイル\giflib\lib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -37,6 +52,24 @@
     </ClCompile>
     <ClCompile Include="GifSaver.cpp">
       <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\giflib\lib\openbsd-reallocarray.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\giflib\lib\quantize.c">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\giflib\lib\egif_lib.c">
+      <Filter>ソース ファイル\giflib\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\giflib\lib\gif_err.c">
+      <Filter>ソース ファイル\giflib\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\giflib\lib\gifalloc.c">
+      <Filter>ソース ファイル\giflib\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\giflib\lib\gif_hash.c">
+      <Filter>ソース ファイル\giflib\lib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

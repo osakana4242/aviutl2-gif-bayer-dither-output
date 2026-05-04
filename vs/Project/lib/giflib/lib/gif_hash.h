@@ -7,7 +7,11 @@ gif_hash.h - magfic constants and declarations for GIF LZW
 #ifndef _GIF_HASH_H_
 #define _GIF_HASH_H_
 
+#ifdef _WIN32
+// unistd使う処理を無効化 or スタブ化
+#else
 #include <unistd.h>
+#endif
 #include <stdint.h>
 
 #define HT_SIZE			8192	   /* 12bits = 4096 or twice as big! */

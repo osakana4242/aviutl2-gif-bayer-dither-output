@@ -2,18 +2,31 @@
 //	サンプルAVI(vfw経由)出力プラグイン for AviUtl ExEdit2
 //----------------------------------------------------------------------------------
 
+#include <string>
 #include <algorithm>
+#include <vector>
 #include <windows.h>
 #include <vfw.h>
 #pragma comment(lib, "vfw32.lib")
 
 #include "output2.h"
 
+#include "gif_lib.h"
+
 // for DialogProc
 #include <commctrl.h>
 #include "resource.h"
 #pragma comment(lib, "comctl32.lib")
 //
+
+
+std::string wide_to_utf8(const wchar_t* w) {
+	int size = WideCharToMultiByte(CP_UTF8, 0, w, -1, NULL, 0, NULL, NULL);
+	std::string s(size, 0);
+	WideCharToMultiByte(CP_UTF8, 0, w, -1, s.data(), size, NULL, NULL);
+	return s;
+}
+
 
 bool func_output(OUTPUT_INFO* oip);
 bool func_config(HWND hwnd, HINSTANCE dll_hinst);
@@ -126,35 +139,96 @@ inline void quantize_vga16(
 	ob = palette16[best][2];
 }
 
+inline uint8_t quantize_websafe_index(int r, int g, int b, int x, int y) {
+	double d = get_bayer(x, y);
 
-void process_frame(uint8_t* data, int w, int h) {
-	// BI_RGB は下から上に並んでる
+	r = std::clamp((int)(r + d * 51.0 * g_config.strength), 0, 255);
+	g = std::clamp((int)(g + d * 51.0 * g_config.strength), 0, 255);
+	b = std::clamp((int)(b + d * 51.0 * g_config.strength), 0, 255);
+
+	int ri = (r + 25) / 51;
+	int gi = (g + 25) / 51;
+	int bi = (b + 25) / 51;
+
+	return (uint8_t)(ri * 36 + gi * 6 + bi);
+}
+
+inline uint8_t quantize_vga16_index(int r, int g, int b, int x, int y) {
+	double d = get_bayer(x, y);
+
+	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
+	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
+	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
+
+	int best = 0;
+	int best_dist = INT_MAX;
+
+	for (int i = 0; i < 16; i++) {
+		int dr = r - palette16[i][0];
+		int dg = g - palette16[i][1];
+		int db = b - palette16[i][2];
+		int dist = dr*dr + dg*dg + db*db;
+
+		if (dist < best_dist) {
+			best_dist = dist;
+			best = i;
+		}
+	}
+	return (uint8_t)best;
+}
+
+void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 	int stride = w * 3;
 
 	for (int y = 0; y < h; y++) {
-		int yy = h - 1 - y; // 上下反転
-		uint8_t* row = data + yy * stride;
+		int yy = h - 1 - y; // BMP上下反転
+		uint8_t* row = src + yy * stride;
 
 		for (int x = 0; x < w; x++) {
 			uint8_t* px = row + x * 3;
 
-			// BGR順
 			uint8_t b = px[0];
 			uint8_t g = px[1];
 			uint8_t r = px[2];
 
+			uint8_t idx;
+
 			if (g_config.mode == 0) {
-				r = quantize_websafe(r, x, y);
-				g = quantize_websafe(g, x, y);
-				b = quantize_websafe(b, x, y);
+				idx = quantize_websafe_index(r, g, b, x, y);
 			} else {
-				quantize_vga16(r, g, b, x, y, r, g, b);
+				idx = quantize_vga16_index(r, g, b, x, y);
 			}
 
-			px[0] = b;
-			px[1] = g;
-			px[2] = r;
+			dst[y * w + x] = idx;
 		}
+	}
+}
+
+
+ColorMapObject* create_palette() {
+	if (g_config.mode == 0) {
+		auto* map = GifMakeMapObject(256, NULL);
+
+		for (int r = 0; r < 6; r++)
+		for (int g = 0; g < 6; g++)
+		for (int b = 0; b < 6; b++) {
+			int i = r*36 + g*6 + b;
+			map->Colors[i].Red   = r * 51;
+			map->Colors[i].Green = g * 51;
+			map->Colors[i].Blue  = b * 51;
+		}
+
+		return map;
+	}
+	else {
+		auto* map = GifMakeMapObject(16, NULL);
+
+		for (int i = 0; i < 16; i++) {
+			map->Colors[i].Red   = palette16[i][0];
+			map->Colors[i].Green = palette16[i][1];
+			map->Colors[i].Blue  = palette16[i][2];
+		}
+		return map;
 	}
 }
 
@@ -196,82 +270,56 @@ struct AVI_HANDLE {
 //	出力プラグイン出力関数
 //---------------------------------------------------------------------
 bool func_output(OUTPUT_INFO* oip) {
-	AVI_HANDLE avi;
-	if (AVIFileOpen(&avi.pfile, oip->savefile, OF_WRITE | OF_CREATE, NULL) != S_OK) {
-		return false;
-	}
 
-	// ビデオストリームの設定
-	AVISTREAMINFO video{};
-	video.fccType = streamtypeVIDEO;
-	video.fccHandler = BI_RGB;
-	video.dwRate = oip->rate;
-	video.dwScale = oip->scale;
-	video.rcFrame.right = oip->w;
-	video.rcFrame.bottom = oip->h;
-	if (AVIFileCreateStream(avi.pfile, &avi.pvideo, &video) != S_OK) {
-		return false;
-	}
-	BITMAPINFOHEADER bmih{};
-	bmih.biSize = sizeof(BITMAPINFOHEADER);
-	bmih.biWidth = oip->w;
-	bmih.biHeight = oip->h;
-	bmih.biPlanes = 1;
-	bmih.biBitCount = 24;
-	bmih.biCompression = BI_RGB;
-	bmih.biSizeImage = oip->w * oip->h * 3;
-	if (AVIStreamSetFormat(avi.pvideo, 0, &bmih, sizeof(bmih)) != S_OK) {
-		return false;
-	}
+	int error = 0;
+	std::string path = wide_to_utf8(oip->savefile);
+	GifFileType* gif = EGifOpenFileName(path.c_str(), false, &error);
+	if (!gif) return false;
 
-	// オーディオストリームの設定
-	AVISTREAMINFO audio{};
-	audio.fccType = streamtypeAUDIO;
-	audio.fccHandler = WAVE_FORMAT_PCM;
-	audio.dwSampleSize = oip->audio_ch * 2;
-	audio.dwRate = oip->audio_rate * audio.dwSampleSize;
-	audio.dwScale = audio.dwSampleSize;
-	if (AVIFileCreateStream(avi.pfile, &avi.paudio, &audio) != S_OK) {
-		return false;
-	}
-	WAVEFORMATEX wf{};
-	wf.wFormatTag = WAVE_FORMAT_PCM;
-	wf.nChannels = oip->audio_ch;
-	wf.nSamplesPerSec = oip->audio_rate;
-	wf.wBitsPerSample = 16;
-	wf.nBlockAlign = wf.nChannels * (wf.wBitsPerSample / 8);
-	wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
-	if (AVIStreamSetFormat(avi.paudio, 0, &wf, sizeof(wf)) != S_OK) {
-		return false;
-	}
+	auto* palette = create_palette();
 
-	oip->func_set_buffer_size(5, 10); // データ取得バッファ数を変更
+	EGifPutScreenDesc(gif, oip->w, oip->h, 8, 0, palette);
+
+	std::vector<uint8_t> indexed(oip->w * oip->h);
+
+	double fps = (double)oip->rate / oip->scale;
+	int delay = (int)(100.0 / fps);
+
+	// ループ設定（無限）
+	{
+		unsigned char loop[] = {1, 0, 0};
+		EGifPutExtensionLeader(gif, APPLICATION_EXT_FUNC_CODE);
+		EGifPutExtensionBlock(gif, 11, "NETSCAPE2.0");
+		EGifPutExtensionBlock(gif, 3, loop);
+		EGifPutExtensionTrailer(gif);
+	}
 
 	for (int frame = 0; frame < oip->n; frame++) {
-		oip->func_rest_time_disp(frame, oip->n); // 残り時間を表示
-		if (oip->func_is_abort()) break; // 中断の確認
 
-		// ビデオの書き込み
-		void* data = oip->func_get_video(frame, BI_RGB);
+		oip->func_rest_time_disp(frame, oip->n);
+		if (oip->func_is_abort()) break;
 
-		// ★ここで加工
-		process_frame((uint8_t*)data, oip->w, oip->h);
+		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
 
-		if (AVIStreamWrite(avi.pvideo, frame, 1, data, bmih.biSizeImage, AVIIF_KEYFRAME, NULL, NULL) != S_OK) {
-			break;
-		}
+		convert_to_indexed(src, indexed.data(), oip->w, oip->h);
 
-		// オーディオの書き込み
-		int audioPos = (int)((double)frame / video.dwRate * video.dwScale * oip->audio_rate);
-		int audioNum = (int)((double)(frame + 1) / video.dwRate * video.dwScale * oip->audio_rate) - audioPos;
-		int audioReaded = 0;
-		data = oip->func_get_audio(audioPos, audioNum, &audioReaded, WAVE_FORMAT_PCM);
-		if (audioReaded == 0) continue;
-		if (AVIStreamWrite(avi.paudio, audioPos, audioReaded, data, audioReaded * wf.nBlockAlign, 0, NULL, NULL) != S_OK) {
-			break;
+		// 遅延
+		unsigned char gce[4];
+		gce[0] = 0x04;
+		gce[1] = delay & 0xFF;
+		gce[2] = (delay >> 8) & 0xFF;
+		gce[3] = 0;
+
+		EGifPutExtension(gif, GRAPHICS_EXT_FUNC_CODE, 4, gce);
+
+		EGifPutImageDesc(gif, 0, 0, oip->w, oip->h, false, NULL);
+
+		for (int y = 0; y < oip->h; y++) {
+			EGifPutLine(gif, indexed.data() + y * oip->w, oip->w);
 		}
 	}
 
+	EGifCloseFile(gif, &error);
 	return true;
 }
 
