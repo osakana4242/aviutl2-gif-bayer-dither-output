@@ -304,16 +304,6 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		return TRUE;
 	}
 
-	case WM_CTLCOLORSTATIC:
-	{
-		// テキストの背景をグレーではなく透けさせる.
-		if ((HWND)lParam == GetDlgItem(hDlg, IDC_STRENGTH_TEXT)) {
-			SetBkMode((HDC)wParam, TRANSPARENT);
-			return (INT_PTR)GetStockObject(NULL_BRUSH);
-		}
-		break;
-	}
-
 	case WM_HSCROLL:
 	{
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
