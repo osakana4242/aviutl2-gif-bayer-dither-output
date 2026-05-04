@@ -49,12 +49,22 @@ enum class ColorMode {
 	WebSafe = 0,
 	VGA16   = 1,
 	RGB8    = 2,
+	Count,
 };
+
+static const wchar_t* g_mode_display_names[] = {
+	L"WebSafe",
+	L"VGA16",
+	L"RGB8"
+};
+
+static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
+	"mode name mismatch");
 
 // 設定構造体
 struct CONFIG {
 	ColorMode mode = ColorMode::RGB8;
-	int bayer = 0;       // 0=8x8, 1=4x4
+	int bayer = 1;       // 0=8x8, 1=4x4
 	double strength = 1.0;
 };
 
@@ -400,9 +410,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 		// モード
 		HWND hMode = GetDlgItem(hDlg, IDC_MODE);
-		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"WebSafe(216)");
-		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"VGA16");
-		SendMessageW(hMode, CB_ADDSTRING, 0, (LPARAM)L"RGB8");
+		for (int i = 0; i < (int)ColorMode::Count; i++) {
+			SendMessageW(hMode, CB_ADDSTRING, 0,
+				(LPARAM)g_mode_display_names[i]);
+		}
 		SendMessageW(hMode, CB_SETCURSEL, 0, 0);
 
 		// Bayer
@@ -494,10 +505,7 @@ bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 LPCWSTR func_get_config_text() {
 	static wchar_t buf[256];
 
-	const wchar_t* mode =
-		(g_config.mode == ColorMode::WebSafe) ? L"WebSafe" :
-		(g_config.mode == ColorMode::VGA16) ? L"VGA16" :
-		L"RGB8";
+	const wchar_t* mode = g_mode_display_names[(int)g_config.mode];
 
 	const wchar_t* bayer =
 		(g_config.bayer == 0) ? L"8x8" : L"4x4";
