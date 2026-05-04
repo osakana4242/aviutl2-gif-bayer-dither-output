@@ -25,7 +25,7 @@ FILTER_ITEM_SELECT::ITEM bayer_list[] = {
     { L"4x4", 1 },
     { nullptr }
 };
-auto bayer_mode = FILTER_ITEM_SELECT(L"Bayerサイズ", 0, bayer_list);
+auto bayer_mode = FILTER_ITEM_SELECT(L"ベイヤーサイズ", 0, bayer_list);
 
 void* items[] = { &mode, &bayer_mode, &strength, nullptr };
 
@@ -34,12 +34,12 @@ void* items[] = { &mode, &bayer_mode, &strength, nullptr };
 //---------------------------------------------------------------------
 FILTER_PLUGIN_TABLE filter_plugin_table = {
 	FILTER_PLUGIN_TABLE::FLAG_VIDEO,
-	L"ベイヤーディザ減色",                // プラグインの名前
-	L"ベイヤーディザ減色",                // ラベルの初期値 (nullptrならデフォルトのラベルになります)
-	L"ベイヤーディザ減色 by osakana4242", // プラグインの情報
-	items,                                // 画像フィルタ処理関数へのポインタ (FLAG_VIDEOが有効の時のみ呼ばれます)
-	func_proc_video,                      // 設定項目の定義 (FILTER_ITEM_XXXポインタを列挙してnull終端したリストへのポインタ)
-	nullptr                               // 音声フィルタ処理関数へのポインタ (FLAG_AUDIOが有効の時のみ呼ばれます)
+	L"ベイヤーディザ減色",                 // ラベルの初期値 (nullptrならデフォルトのラベルになります)
+	L"ベイヤーディザ減色",                 // プラグインの名前
+	L"ベイヤーディザ減色 v1.0.0 by 三川おさかな", // プラグインの情報
+	items,                                       // 画像フィルタ処理関数へのポインタ (FLAG_VIDEOが有効の時のみ呼ばれます)
+	func_proc_video,                             // 設定項目の定義 (FILTER_ITEM_XXXポインタを列挙してnull終端したリストへのポインタ)
+	nullptr                                      // 音声フィルタ処理関数へのポインタ (FLAG_AUDIOが有効の時のみ呼ばれます)
 };
 
 EXTERN_C __declspec(dllexport) FILTER_PLUGIN_TABLE *GetFilterPluginTable(void) {
