@@ -22,3 +22,5 @@
 #define IDC_BAYER_4       104
 
 #define IDC_STRENGTH      105
+
+#define IDC_STRENGTH_TEXT 106
