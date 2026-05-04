@@ -26,55 +26,130 @@ OUTPUT_PLUGIN_TABLE output_plugin_table = {
 	func_get_config_text,							// 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
 };
 
+// 設定構造体
+struct CONFIG {
+	int mode = 0;        // 0=WebSafe, 1=VGA16
+	int bayer = 0;       // 0=8x8, 1=4x4
+	double strength = 1.0;
+};
+
+static CONFIG g_config;
+
+// パレットVGA
+static const unsigned char palette16[16][3] = {
+	{0, 0, 0},       {128, 0, 0},   {0, 128, 0},   {128, 128, 0},
+	{0, 0, 128},     {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
+	{128, 128, 128}, {255, 0, 0},   {0, 255, 0},   {255, 255, 0},
+	{0, 0, 255},     {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
+};
 
 // 8x8 Bayer
 static const int bayer8x8[8][8] = {
-    { 0,48,12,60,3,51,15,63 },
-    {32,16,44,28,35,19,47,31},
-    { 8,56, 4,52,11,59, 7,55},
-    {40,24,36,20,43,27,39,23},
-    { 2,50,14,62, 1,49,13,61},
-    {34,18,46,30,33,17,45,29},
-    {10,58, 6,54, 9,57, 5,53},
-    {42,26,38,22,41,25,37,21}
+		{ 0,48,12,60,3,51,15,63 },
+		{32,16,44,28,35,19,47,31},
+		{ 8,56, 4,52,11,59, 7,55},
+		{40,24,36,20,43,27,39,23},
+		{ 2,50,14,62, 1,49,13,61},
+		{34,18,46,30,33,17,45,29},
+		{10,58, 6,54, 9,57, 5,53},
+		{42,26,38,22,41,25,37,21}
 };
 
-inline unsigned char quantize_websafe(int v, int x, int y) {
-    double d = (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
-    double val = v + d * 51.0;
+// 4x4
+static const int bayer4x4[4][4] = {
+	{ 0, 8, 2,10 },
+	{12, 4,14, 6 },
+	{ 3,11, 1, 9 },
+	{15, 7,13, 5 }
+};
 
-    val = std::clamp(val, 0.0, 255.0);
-    int level = (int)(val / 51.0 + 0.5);
-    level = std::clamp(level, 0, 5);
 
-    return (unsigned char)(level * 51);
+inline double get_bayer(int x, int y) {
+	if (g_config.bayer == 0) {
+		return (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
+	} else {
+		return (bayer4x4[y & 3][x & 3] / 16.0) - 0.5;
+	}
 }
 
+inline unsigned char quantize_websafe(int v, int x, int y) {
+	double d = get_bayer(x, y);
+	double val = v + d * 51.0 * g_config.strength;
+
+	val = std::clamp(val, 0.0, 255.0);
+
+	int level = (int)(val / 51.0 + 0.5);
+	level = std::clamp(level, 0, 5);
+
+	return (unsigned char)(level * 51);
+}
+
+
+inline void quantize_vga16(
+	int r, int g, int b,
+	int x, int y,
+	unsigned char& or_, unsigned char& og, unsigned char& ob) {
+	double d = get_bayer(x, y);
+
+	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
+	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
+	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
+
+	int best = 0;
+	int best_dist = INT_MAX;
+
+	for (int i = 0; i < 16; i++) {
+		int pr = palette16[i][0];
+		int pg = palette16[i][1];
+		int pb = palette16[i][2];
+
+		int dr = r - pr;
+		int dg = g - pg;
+		int db = b - pb;
+
+		int dist = dr * dr + dg * dg + db * db;
+
+		if (dist < best_dist) {
+			best_dist = dist;
+			best = i;
+		}
+	}
+
+	or_ = palette16[best][0];
+	og = palette16[best][1];
+	ob = palette16[best][2];
+}
+
+
 void process_frame(uint8_t* data, int w, int h) {
-    // BI_RGB は下から上に並んでる
-    int stride = w * 3;
+	// BI_RGB は下から上に並んでる
+	int stride = w * 3;
 
-    for (int y = 0; y < h; y++) {
-        int yy = h - 1 - y; // 上下反転
-        uint8_t* row = data + yy * stride;
+	for (int y = 0; y < h; y++) {
+		int yy = h - 1 - y; // 上下反転
+		uint8_t* row = data + yy * stride;
 
-        for (int x = 0; x < w; x++) {
-            uint8_t* px = row + x * 3;
+		for (int x = 0; x < w; x++) {
+			uint8_t* px = row + x * 3;
 
-            // BGR順
-            uint8_t b = px[0];
-            uint8_t g = px[1];
-            uint8_t r = px[2];
+			// BGR順
+			uint8_t b = px[0];
+			uint8_t g = px[1];
+			uint8_t r = px[2];
 
-            r = quantize_websafe(r, x, y);
-            g = quantize_websafe(g, x, y);
-            b = quantize_websafe(b, x, y);
+			if (g_config.mode == 0) {
+				r = quantize_websafe(r, x, y);
+				g = quantize_websafe(g, x, y);
+				b = quantize_websafe(b, x, y);
+			} else {
+				quantize_vga16(r, g, b, x, y, r, g, b);
+			}
 
-            px[0] = b;
-            px[1] = g;
-            px[2] = r;
-        }
-    }
+			px[0] = b;
+			px[1] = g;
+			px[2] = r;
+		}
+	}
 }
 
 //---------------------------------------------------------------------
@@ -93,8 +168,7 @@ EXTERN_C __declspec(dllexport) void UninitializePlugin() {
 //---------------------------------------------------------------------
 //	出力プラグイン構造体のポインタを渡す関数
 //---------------------------------------------------------------------
-EXTERN_C __declspec(dllexport) OUTPUT_PLUGIN_TABLE* GetOutputPluginTable(void)
-{
+EXTERN_C __declspec(dllexport) OUTPUT_PLUGIN_TABLE* GetOutputPluginTable(void) {
 	return &output_plugin_table;
 }
 
@@ -173,9 +247,9 @@ bool func_output(OUTPUT_INFO* oip) {
 
 		// ビデオの書き込み
 		void* data = oip->func_get_video(frame, BI_RGB);
-	
-	   // ★ここで加工
-    process_frame((uint8_t*)data, oip->w, oip->h);
+
+		// ★ここで加工
+		process_frame((uint8_t*)data, oip->w, oip->h);
 
 		if (AVIStreamWrite(avi.pvideo, frame, 1, data, bmih.biSizeImage, AVIIF_KEYFRAME, NULL, NULL) != S_OK) {
 			break;
@@ -199,9 +273,29 @@ bool func_output(OUTPUT_INFO* oip) {
 //	設定ダイアログ
 //---------------------------------------------------------------------
 bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
-	MessageBox(hwnd, L"サンプルダイアログ", L"出力設定", MB_OK);
 
-	// DLLを開放されても設定が残るように保存しておいてください
+	int ret = MessageBox(
+		hwnd,
+		L"モード切替:\nYES = WebSafe\nNO = VGA16",
+		L"カラーモード",
+		MB_YESNOCANCEL
+	);
+
+	if (ret == IDCANCEL) return false;
+
+	g_config.mode = (ret == IDYES) ? 0 : 1;
+
+	ret = MessageBox(
+		hwnd,
+		L"Bayerサイズ:\nYES = 8x8\nNO = 4x4",
+		L"Bayer",
+		MB_YESNO
+	);
+
+	g_config.bayer = (ret == IDYES) ? 0 : 1;
+
+	// 強度は固定でもいいけど一応変更
+	g_config.strength = (g_config.mode == 0) ? 1.0 : 0.8;
 
 	return true;
 }
@@ -209,6 +303,19 @@ bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 //---------------------------------------------------------------------
 //	出力設定のテキスト情報 (設定ボタンの隣に表示される)
 //---------------------------------------------------------------------
+// 文字列表示（UI右側に出るやつ）
 LPCWSTR func_get_config_text() {
-	return L"サンプル設定情報";
+	static wchar_t buf[256];
+
+	const wchar_t* mode =
+		(g_config.mode == 0) ? L"WebSafe" : L"VGA16";
+
+	const wchar_t* bayer =
+		(g_config.bayer == 0) ? L"8x8" : L"4x4";
+
+	swprintf_s(buf, L"%s / Bayer %s / 強度 %.2f",
+						 mode, bayer, g_config.strength);
+
+	return buf;
 }
+
