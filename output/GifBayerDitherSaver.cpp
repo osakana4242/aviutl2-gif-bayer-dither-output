@@ -120,13 +120,19 @@ struct AVI_HANDLE {
 //---------------------------------------------------------------------
 //	出力プラグイン出力関数
 //---------------------------------------------------------------------
-bool func_output2(OUTPUT_INFO* oip) {
+
+inline int calc_stride(int w) {
+	return (w * 3 + 3) & ~3;
+}
+
+bool func_output(OUTPUT_INFO* oip) {
 
 	int error = 0;
 	std::string path = wide_to_utf8(oip->savefile);
 	GifFileType* gif = EGifOpenFileName(path.c_str(), false, &error);
 	if (!gif) return false;
 
+	int stride = calc_stride(oip->w);
 	auto* palette = create_palette();
 
 	EGifPutScreenDesc(gif, oip->w, oip->h, 8, 0, palette);
@@ -152,7 +158,7 @@ bool func_output2(OUTPUT_INFO* oip) {
 
 		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
 
-		convert_to_indexed(src, indexed.data(), oip->w, oip->h, g_config.mode, g_config.bayer, g_config.strength);
+		convert_to_indexed(src, indexed.data(), oip->w, oip->h, stride, g_config.mode, g_config.bayer, g_config.strength);
 
 		// 遅延
 		unsigned char gce[4];
@@ -174,13 +180,10 @@ bool func_output2(OUTPUT_INFO* oip) {
 	return true;
 }
 
-inline int calc_stride(int w) {
-	return (w * 3 + 3) & ~3;
-}
 
 void process_frame(uint8_t* data, int w, int h, int stride) {
 	for (int y = 0; y < h; y++) {
-		uint8_t* row = data + y * stride; // ←そのまま
+		uint8_t* row = data + y * stride;
 
 		for (int x = 0; x < w; x++) {
 			uint8_t* px = row + x * 3;
@@ -198,7 +201,7 @@ void process_frame(uint8_t* data, int w, int h, int stride) {
 	}
 }
 
-bool func_output(OUTPUT_INFO* oip) {
+bool func_output_avi(OUTPUT_INFO* oip) {
 	AVI_HANDLE avi;
 	if (AVIFileOpen(&avi.pfile, oip->savefile, OF_WRITE | OF_CREATE, NULL) != S_OK) {
 		return false;

@@ -225,9 +225,7 @@ inline uint8_t quantize_index(ColorMode mode,
 }
 
 
-inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, ColorMode mode, BayerMode bayer, float strength) {
-	int stride = w * 3;
-
+inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, int stride, ColorMode mode, BayerMode bayer, float strength) {
 	for (int y = 0; y < h; y++) {
 		int yy = h - 1 - y; // BMP上下反転
 		uint8_t* row = src + yy * stride;
@@ -245,3 +243,9 @@ inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, ColorMo
 		}
 	}
 }
+
+inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, ColorMode mode, BayerMode bayer, float strength) {
+	int stride = w * 3;
+	convert_to_indexed(src, dst, w, h, stride, mode, bayer, strength);
+}
+
