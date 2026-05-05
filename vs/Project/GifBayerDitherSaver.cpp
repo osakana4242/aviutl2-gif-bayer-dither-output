@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------
-//	ベイヤーディザ減色GIF出力プラグイン for AviUtl ExEdit2
+//	GIFベイヤーディザ出力プラグイン for AviUtl ExEdit2
 //----------------------------------------------------------------------------------
 
 #include <string>
@@ -35,9 +35,9 @@ LPCWSTR func_get_config_text();
 //---------------------------------------------------------------------
 OUTPUT_PLUGIN_TABLE output_plugin_table = {
 	OUTPUT_PLUGIN_TABLE::FLAG_VIDEO | OUTPUT_PLUGIN_TABLE::FLAG_AUDIO, //	フラグ
-	L"ベイヤーディザ減色GIF出力", // プラグインの名前
-	L"GifFile (*.gif)\0*.gif\0", // 出力ファイルのフィルタ
-	L"ベイヤーディザ減色GIF出力 v1.0.0 By 三川おさかな", // プラグインの情報
+	L"GIFベイヤーディザ出力", // プラグインの名前
+	L"GIF File (*.gif)\0*.gif\0", // 出力ファイルのフィルタ
+	L"GIFベイヤーディザ出力 v1.0.0 By 三川おさかな", // プラグインの情報
 	func_output, // 出力時に呼ばれる関数へのポインタ
 	func_config, // 出力設定のダイアログを要求された時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
 	func_get_config_text, // 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
@@ -283,7 +283,6 @@ ColorMapObject* create_palette(const unsigned char (&palette)[N][3]) {
 ColorMapObject* create_palette() {
 	switch (g_config.mode) {
 	case ColorMode::C256:
-	fatal_error("unti うんち");
 		return create_palette(palette_256);
 	case ColorMode::C16:
 		return create_palette(palette_16);
