@@ -7,18 +7,17 @@
 #include <vector>
 #include <windows.h>
 #include <vfw.h>
+#include <commctrl.h>
 #pragma comment(lib, "vfw32.lib")
-
+#pragma comment(lib, "comctl32.lib")
+#include "gif_lib.h"
+#include "resource.h"
 #include "output2.h"
 
-#include "gif_lib.h"
 
-// for DialogProc
-#include <commctrl.h>
-#include "resource.h"
-#pragma comment(lib, "comctl32.lib")
-//
-
+#include <cstdio>
+#include <cstdarg>
+#include <cstdlib>
 
 std::string wide_to_utf8(const wchar_t* w) {
 	int size = WideCharToMultiByte(CP_UTF8, 0, w, -1, NULL, 0, NULL, NULL);
@@ -26,7 +25,6 @@ std::string wide_to_utf8(const wchar_t* w) {
 	WideCharToMultiByte(CP_UTF8, 0, w, -1, s.data(), size, NULL, NULL);
 	return s;
 }
-
 
 bool func_output(OUTPUT_INFO* oip);
 bool func_config(HWND hwnd, HINSTANCE dll_hinst);
@@ -37,12 +35,12 @@ LPCWSTR func_get_config_text();
 //---------------------------------------------------------------------
 OUTPUT_PLUGIN_TABLE output_plugin_table = {
 	OUTPUT_PLUGIN_TABLE::FLAG_VIDEO | OUTPUT_PLUGIN_TABLE::FLAG_AUDIO, //	フラグ
-	L"GIF File Saver osakana4242",					// プラグインの名前
-	L"GifFile (*.gif)\0*.gif\0",					// 出力ファイルのフィルタ
-	L"GIF File Saver version 1.00 By 三川おさかな",	// プラグインの情報
-	func_output,									// 出力時に呼ばれる関数へのポインタ
-	func_config,									// 出力設定のダイアログを要求された時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
-	func_get_config_text,							// 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
+	L"ベイヤーディザ減色GIF出力", // プラグインの名前
+	L"GifFile (*.gif)\0*.gif\0", // 出力ファイルのフィルタ
+	L"ベイヤーディザ減色GIF出力 v1.0.0 By 三川おさかな", // プラグインの情報
+	func_output, // 出力時に呼ばれる関数へのポインタ
+	func_config, // 出力設定のダイアログを要求された時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
+	func_get_config_text, // 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
 };
 
 //---------------------------------------------------------------------
@@ -89,7 +87,7 @@ static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
 struct CONFIG {
 	ColorMode mode = ColorMode::C8;
 	BayerMode bayer = BayerMode::Bayer4x4;
-	double strength = 2.0;
+	float strength = 2.0;
 };
 
 static CONFIG g_config;
@@ -157,7 +155,6 @@ inline void init_palette_websafe() {
 //---------------------------------------------------------------------
 // Bayer
 
-// 8x8 Bayer
 static const int bayer8x8[8][8] = {
 		{ 0,48,12,60,3,51,15,63 },
 		{32,16,44,28,35,19,47,31},
@@ -169,7 +166,6 @@ static const int bayer8x8[8][8] = {
 		{42,26,38,22,41,25,37,21}
 };
 
-// 4x4
 static const int bayer4x4[4][4] = {
 	{ 0, 8, 2,10 },
 	{12, 4,14, 6 },
@@ -177,15 +173,14 @@ static const int bayer4x4[4][4] = {
 	{15, 7,13, 5 }
 };
 
-inline double get_bayer(int x, int y) {
+inline float get_bayer(int x, int y) {
 	switch (g_config.bayer) {
 	case BayerMode::Bayer8x8:
-		return (bayer8x8[y & 7][x & 7] / 64.0) - 0.5;
-
+		return (bayer8x8[y & 7][x & 7] / 64.0f) - 0.5f;
 	case BayerMode::Bayer4x4:
-		return (bayer4x4[y & 3][x & 3] / 16.0) - 0.5;
+		return (bayer4x4[y & 3][x & 3] / 16.0f) - 0.5f;
 	}
-	return 0.0; // 保険
+	return 0;
 }
 
 //---------------------------------------------------------------------
@@ -197,11 +192,12 @@ inline uint8_t quantize_index(
 	int r, int g, int b,
 	int x, int y)
 {
-	double d = get_bayer(x, y);
+	float d = get_bayer(x, y);
+	int offset = (int)std::roundf(d * 64.0f * g_config.strength);
 
-	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
-	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
-	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
+	r = std::clamp(r + offset, 0, 255);
+	g = std::clamp(g + offset, 0, 255);
+	b = std::clamp(b + offset, 0, 255);
 
 	int best = 0;
 	int best_dist = INT_MAX;
@@ -210,7 +206,8 @@ inline uint8_t quantize_index(
 		int dr = r - palette[i][0];
 		int dg = g - palette[i][1];
 		int db = b - palette[i][2];
-		int dist = dr*dr + dg*dg + db*db;
+		// int dist = dr*dr + dg*dg + db*db;
+		int dist = 3*dr*dr + 6*dg*dg + 1*db*db; // にんげん向け. 緑の重みを強める.
 
 		if (dist < best_dist) {
 			best_dist = dist;
@@ -226,7 +223,7 @@ inline void quantize(
 	int r, int g, int b,
 	int x, int y,
 	unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
-	double d = get_bayer(x, y);
+
 	auto best = quantize_index(palette, r, g, b, x, y);
 
 	out_r = palette[best][0];
@@ -234,29 +231,21 @@ inline void quantize(
 	out_b = palette[best][2];
 }
 
-void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
-	uint8_t(*func)(int, int, int, int, int) = nullptr;
-
+inline uint8_t quantize_index(int r, int g, int b, int x, int y) {
 	switch (g_config.mode) {
 	case ColorMode::C256:
-		func = [](int r, int g, int b, int x, int y) {
-			return quantize_index(palette_256, r, g, b, x, y);
-		};
-		break;
-
+		return quantize_index(palette_256, r, g, b, x, y);
 	case ColorMode::C16:
-		func = [](int r, int g, int b, int x, int y) {
-			return quantize_index(palette_16, r, g, b, x, y);
-		};
-		break;
-
+		return quantize_index(palette_16, r, g, b, x, y);
 	case ColorMode::C8:
-		func = [](int r, int g, int b, int x, int y) {
-			return quantize_index(palette_8, r, g, b, x, y);
-		};
-		break;
+		return quantize_index(palette_8, r, g, b, x, y);
+	default:
+		return 0;
 	}
+}
 
+
+void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 	int stride = w * 3;
 
 	for (int y = 0; y < h; y++) {
@@ -270,7 +259,7 @@ void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 			uint8_t g = px[1];
 			uint8_t r = px[2];
 
-			uint8_t idx = func(r, g, b, x, y);
+			uint8_t idx = quantize_index(r, g, b, x, y);
 
 			dst[y * w + x] = idx;
 		}
@@ -294,6 +283,7 @@ ColorMapObject* create_palette(const unsigned char (&palette)[N][3]) {
 ColorMapObject* create_palette() {
 	switch (g_config.mode) {
 	case ColorMode::C256:
+	fatal_error("unti うんち");
 		return create_palette(palette_256);
 	case ColorMode::C16:
 		return create_palette(palette_16);
@@ -355,7 +345,7 @@ bool func_output(OUTPUT_INFO* oip) {
 
 	std::vector<uint8_t> indexed(oip->w * oip->h);
 
-	double fps = (double)oip->rate / oip->scale;
+	float fps = (float)oip->rate / oip->scale;
 	int delay = (int)(100.0 / fps);
 
 	// ループ設定（無限）
@@ -439,7 +429,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
 		int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
 
-		double val = pos / 100.0;
+		float val = pos / 100.0f;
 
 		wchar_t buf[32];
 		swprintf_s(buf, L"%.2f", val);

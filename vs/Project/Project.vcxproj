@@ -182,10 +182,6 @@
     <ClInclude Include="unistd.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AviSaver.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
     <ClCompile Include="GifSaver.cpp" />
     <ClCompile Include="lib\giflib\lib\egif_lib.c" />
     <ClCompile Include="lib\giflib\lib\gifalloc.c" />
