@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------
-//	サンプルAVI(vfw経由)出力プラグイン for AviUtl ExEdit2
+//	ベイヤーディザ減色GIF出力プラグイン for AviUtl ExEdit2
 //----------------------------------------------------------------------------------
 
 #include <string>
@@ -45,6 +45,10 @@ OUTPUT_PLUGIN_TABLE output_plugin_table = {
 	func_get_config_text,							// 出力設定のテキスト情報を取得する時に呼ばれる関数へのポインタ (nullptrなら呼ばれません)
 };
 
+//---------------------------------------------------------------------
+// ColoMode
+//---------------------------------------------------------------------
+
 enum class ColorMode {
 	WebSafe = 0,
 	VGA16   = 1,
@@ -61,9 +65,13 @@ static const wchar_t* g_mode_display_names[] = {
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
 	"mode name mismatch");
 
+//---------------------------------------------------------------------
+// BayerMode
+//---------------------------------------------------------------------
+
 enum class BayerMode {
 	Bayer8x8 = 0,
-	Bayer4x4,
+	Bayer4x4 = 1,
 	Count,
 };
 
@@ -75,7 +83,9 @@ static const wchar_t* g_bayer_display_names[] = {
 static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
 	"bayer name mismatch");
 
+//---------------------------------------------------------------------
 // 設定構造体
+//---------------------------------------------------------------------
 struct CONFIG {
 	ColorMode mode = ColorMode::RGB8;
 	BayerMode bayer = BayerMode::Bayer4x4;
@@ -84,7 +94,10 @@ struct CONFIG {
 
 static CONFIG g_config;
 
-// パレット RGB8
+//---------------------------------------------------------------------
+// パレット
+
+// パレット8 RGB8
 static const unsigned char palette8[8][3] = {
 	{0, 0, 0},
 	{0, 0, 255},
@@ -96,14 +109,33 @@ static const unsigned char palette8[8][3] = {
 	{255, 255, 255}
 };
 
-
-// パレットVGA
+// パレット16 VGA
 static const unsigned char palette16[16][3] = {
 	{0, 0, 0},       {128, 0, 0},   {0, 128, 0},   {128, 128, 0},
 	{0, 0, 128},     {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
 	{128, 128, 128}, {255, 0, 0},   {0, 255, 0},   {255, 255, 0},
 	{0, 0, 255},     {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
 };
+
+// パレット216 WebSafe (216色)
+static unsigned char palette_websafe[216][3] = {};
+
+inline void init_palette_websafe() {
+	int idx = 0;
+	for (int r = 0; r < 6; r++) {
+		for (int g = 0; g < 6; g++) {
+			for (int b = 0; b < 6; b++) {
+				palette_websafe[idx][0] = r * 51;
+				palette_websafe[idx][1] = g * 51;
+				palette_websafe[idx][2] = b * 51;
+				idx++;
+			}
+		}
+	}
+}
+
+//---------------------------------------------------------------------
+// Bayer
 
 // 8x8 Bayer
 static const int bayer8x8[8][8] = {
@@ -136,118 +168,75 @@ inline double get_bayer(int x, int y) {
 	return 0.0; // 保険
 }
 
+//---------------------------------------------------------------------
+// quantize
 
-inline unsigned char quantize_websafe(int v, int x, int y) {
+template<size_t N>
+inline uint8_t quantize_index(
+	const unsigned char (&palette)[N][3],
+	int r, int g, int b,
+	int x, int y)
+{
 	double d = get_bayer(x, y);
-	double val = v + d * 51.0 * g_config.strength;
 
-	val = std::clamp(val, 0.0, 255.0);
+	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
+	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
+	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
 
-	int level = (int)(val / 51.0 + 0.5);
-	level = std::clamp(level, 0, 5);
+	int best = 0;
+	int best_dist = INT_MAX;
 
-	return (unsigned char)(level * 51);
+	for (int i = 0; i < N; i++) {
+		int dr = r - palette[i][0];
+		int dg = g - palette[i][1];
+		int db = b - palette[i][2];
+		int dist = dr*dr + dg*dg + db*db;
+
+		if (dist < best_dist) {
+			best_dist = dist;
+			best = i;
+		}
+	}
+	return (uint8_t)best;
 }
 
-
-inline void quantize_vga16(
+template<size_t N>
+inline void quantize(
+	const unsigned char (&palette)[N][3],
 	int r, int g, int b,
 	int x, int y,
-	unsigned char& or_, unsigned char& og, unsigned char& ob) {
+	unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
 	double d = get_bayer(x, y);
+	auto best = quantize_index(palette, r, g, b, x, y);
 
-	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
-	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
-	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
-
-	int best = 0;
-	int best_dist = INT_MAX;
-
-	for (int i = 0; i < 16; i++) {
-		int pr = palette16[i][0];
-		int pg = palette16[i][1];
-		int pb = palette16[i][2];
-
-		int dr = r - pr;
-		int dg = g - pg;
-		int db = b - pb;
-
-		int dist = dr * dr + dg * dg + db * db;
-
-		if (dist < best_dist) {
-			best_dist = dist;
-			best = i;
-		}
-	}
-
-	or_ = palette16[best][0];
-	og = palette16[best][1];
-	ob = palette16[best][2];
-}
-
-inline uint8_t quantize_websafe_index(int r, int g, int b, int x, int y) {
-	double d = get_bayer(x, y);
-
-	r = std::clamp((int)(r + d * 51.0 * g_config.strength), 0, 255);
-	g = std::clamp((int)(g + d * 51.0 * g_config.strength), 0, 255);
-	b = std::clamp((int)(b + d * 51.0 * g_config.strength), 0, 255);
-
-	int ri = (r + 25) / 51;
-	int gi = (g + 25) / 51;
-	int bi = (b + 25) / 51;
-
-	return (uint8_t)(ri * 36 + gi * 6 + bi);
-}
-
-inline uint8_t quantize_vga16_index(int r, int g, int b, int x, int y) {
-	double d = get_bayer(x, y);
-
-	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
-	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
-	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
-
-	int best = 0;
-	int best_dist = INT_MAX;
-
-	for (int i = 0; i < 16; i++) {
-		int dr = r - palette16[i][0];
-		int dg = g - palette16[i][1];
-		int db = b - palette16[i][2];
-		int dist = dr*dr + dg*dg + db*db;
-
-		if (dist < best_dist) {
-			best_dist = dist;
-			best = i;
-		}
-	}
-	return (uint8_t)best;
-}
-
-inline uint8_t quantize_rgb8_index(int r, int g, int b, int x, int y) {
-	double d = get_bayer(x, y);
-
-	r = std::clamp((int)(r + d * 64.0 * g_config.strength), 0, 255);
-	g = std::clamp((int)(g + d * 64.0 * g_config.strength), 0, 255);
-	b = std::clamp((int)(b + d * 64.0 * g_config.strength), 0, 255);
-
-	int best = 0;
-	int best_dist = INT_MAX;
-
-	for (int i = 0; i < 8; i++) {
-		int dr = r - palette8[i][0];
-		int dg = g - palette8[i][1];
-		int db = b - palette8[i][2];
-		int dist = dr*dr + dg*dg + db*db;
-
-		if (dist < best_dist) {
-			best_dist = dist;
-			best = i;
-		}
-	}
-	return (uint8_t)best;
+	out_r = palette16[best][0];
+	out_g = palette16[best][1];
+	out_b = palette16[best][2];
 }
 
 void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
+	uint8_t(*func)(int, int, int, int, int) = nullptr;
+
+	switch (g_config.mode) {
+	case ColorMode::WebSafe:
+		func = [](int r, int g, int b, int x, int y) {
+			return quantize_index(palette_websafe, r, g, b, x, y);
+		};
+		break;
+
+	case ColorMode::VGA16:
+		func = [](int r, int g, int b, int x, int y) {
+			return quantize_index(palette16, r, g, b, x, y);
+		};
+		break;
+
+	case ColorMode::RGB8:
+		func = [](int r, int g, int b, int x, int y) {
+			return quantize_index(palette8, r, g, b, x, y);
+		};
+		break;
+	}
+
 	int stride = w * 3;
 
 	for (int y = 0; y < h; y++) {
@@ -261,67 +250,37 @@ void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 			uint8_t g = px[1];
 			uint8_t r = px[2];
 
-			uint8_t idx;
-
-
-
-			switch (g_config.mode)
-			{
-			case ColorMode::WebSafe:
-				idx = quantize_websafe_index(r, g, b, x, y);
-				break;
-			case ColorMode::VGA16:
-				idx = quantize_vga16_index(r, g, b, x, y);
-				break;
-			case ColorMode::RGB8:
-				idx = quantize_rgb8_index(r, g, b, x, y);
-				break;
-			}
+			uint8_t idx = func(r, g, b, x, y);
 
 			dst[y * w + x] = idx;
 		}
 	}
 }
 
+//---------------------------------------------------------------------
+
+template<size_t N>
+ColorMapObject* create_palette(const unsigned char (&palette)[N][3]) {
+	auto* map = GifMakeMapObject(N, NULL);
+
+	for (int i = 0; i < N; i++) {
+		map->Colors[i].Red =   palette[i][0];
+		map->Colors[i].Green = palette[i][1];
+		map->Colors[i].Blue =  palette[i][2];
+	}
+	return map;
+}
 
 ColorMapObject* create_palette() {
 	switch (g_config.mode) {
-	case ColorMode::WebSafe: {
-		auto* map = GifMakeMapObject(256, NULL);
-
-		for (int r = 0; r < 6; r++)
-			for (int g = 0; g < 6; g++)
-				for (int b = 0; b < 6; b++) {
-					int i = r * 36 + g * 6 + b;
-					map->Colors[i].Red = r * 51;
-					map->Colors[i].Green = g * 51;
-					map->Colors[i].Blue = b * 51;
-				}
-
-		return map;
-	}
+	case ColorMode::WebSafe:
+		return create_palette(palette_websafe);
 	case ColorMode::VGA16:
-	{
-		auto* map = GifMakeMapObject(16, NULL);
-
-		for (int i = 0; i < 16; i++) {
-			map->Colors[i].Red = palette16[i][0];
-			map->Colors[i].Green = palette16[i][1];
-			map->Colors[i].Blue = palette16[i][2];
-		}
-		return map;
-	}
+		return create_palette(palette16);
 	case ColorMode::RGB8:
-	{
-		auto* map = GifMakeMapObject(8, NULL);
-
-		for (int i = 0; i < 8; i++) {
-			map->Colors[i].Red = palette8[i][0];
-			map->Colors[i].Green = palette8[i][1];
-			map->Colors[i].Blue = palette8[i][2];
-		}
-		return map;
-	}
+		return create_palette(palette8);
+	default:
+		return nullptr;
 	}
 }
 
@@ -329,6 +288,7 @@ ColorMapObject* create_palette() {
 //	プラグインDLL初期化関数 (未定義なら呼ばれません)
 //---------------------------------------------------------------------
 EXTERN_C __declspec(dllexport) bool InitializePlugin(DWORD version) { // versionは本体のバージョン番号
+	init_palette_websafe();
 	return true;
 }
 
@@ -475,9 +435,12 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		{
 
 			// モード
-			g_config.mode = (ColorMode)SendMessageW(GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
+			g_config.mode = (ColorMode)SendMessageW(
+					GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
+
 			// Bayer
-			g_config.bayer = (BayerMode)SendMessageW(GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
+			g_config.bayer = (BayerMode)SendMessageW(
+					GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
 			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
