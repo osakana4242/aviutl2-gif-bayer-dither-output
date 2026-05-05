@@ -120,7 +120,7 @@ struct AVI_HANDLE {
 //---------------------------------------------------------------------
 //	出力プラグイン出力関数
 //---------------------------------------------------------------------
-bool func_output(OUTPUT_INFO* oip) {
+bool func_output2(OUTPUT_INFO* oip) {
 
 	int error = 0;
 	std::string path = wide_to_utf8(oip->savefile);
@@ -173,6 +173,113 @@ bool func_output(OUTPUT_INFO* oip) {
 	EGifCloseFile(gif, &error);
 	return true;
 }
+
+
+
+
+void process_frame(uint8_t* data, int w, int h) {
+	// BI_RGB は下から上に並んでる
+	int stride = w * 3;
+
+	for (int y = 0; y < h; y++) {
+		int yy = h - 1 - y; // 上下反転
+		uint8_t* row = data + yy * stride;
+
+		for (int x = 0; x < w; x++) {
+			uint8_t* px = row + x * 3;
+			// BGR順
+			uint8_t b = px[0];
+			uint8_t g = px[1];
+			uint8_t r = px[2];
+			quantize(g_config.mode, r, g, b, x, y, g_config.bayer, g_config.strength, r, g, b);
+
+			px[0] = b;
+			px[1] = g;
+			px[2] = r;
+		}
+	}
+}
+
+bool func_output(OUTPUT_INFO* oip) {
+	AVI_HANDLE avi;
+	if (AVIFileOpen(&avi.pfile, oip->savefile, OF_WRITE | OF_CREATE, NULL) != S_OK) {
+		return false;
+	}
+
+	// ビデオストリームの設定
+	AVISTREAMINFO video{};
+	video.fccType = streamtypeVIDEO;
+	video.fccHandler = BI_RGB;
+	video.dwRate = oip->rate;
+	video.dwScale = oip->scale;
+	video.rcFrame.right = oip->w;
+	video.rcFrame.bottom = oip->h;
+	if (AVIFileCreateStream(avi.pfile, &avi.pvideo, &video) != S_OK) {
+		return false;
+	}
+	BITMAPINFOHEADER bmih{};
+	bmih.biSize = sizeof(BITMAPINFOHEADER);
+	bmih.biWidth = oip->w;
+	bmih.biHeight = oip->h;
+	bmih.biPlanes = 1;
+	bmih.biBitCount = 24;
+	bmih.biCompression = BI_RGB;
+	bmih.biSizeImage = oip->w * oip->h * 3;
+	if (AVIStreamSetFormat(avi.pvideo, 0, &bmih, sizeof(bmih)) != S_OK) {
+		return false;
+	}
+
+	// オーディオストリームの設定
+	AVISTREAMINFO audio{};
+	audio.fccType = streamtypeAUDIO;
+	audio.fccHandler = WAVE_FORMAT_PCM;
+	audio.dwSampleSize = oip->audio_ch * 2;
+	audio.dwRate = oip->audio_rate * audio.dwSampleSize;
+	audio.dwScale = audio.dwSampleSize;
+	if (AVIFileCreateStream(avi.pfile, &avi.paudio, &audio) != S_OK) {
+		return false;
+	}
+	WAVEFORMATEX wf{};
+	wf.wFormatTag = WAVE_FORMAT_PCM;
+	wf.nChannels = oip->audio_ch;
+	wf.nSamplesPerSec = oip->audio_rate;
+	wf.wBitsPerSample = 16;
+	wf.nBlockAlign = wf.nChannels * (wf.wBitsPerSample / 8);
+	wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
+	if (AVIStreamSetFormat(avi.paudio, 0, &wf, sizeof(wf)) != S_OK) {
+		return false;
+	}
+
+	oip->func_set_buffer_size(5, 10); // データ取得バッファ数を変更
+
+	for (int frame = 0; frame < oip->n; frame++) {
+		oip->func_rest_time_disp(frame, oip->n); // 残り時間を表示
+		if (oip->func_is_abort()) break; // 中断の確認
+
+		// ビデオの書き込み
+		void* data = oip->func_get_video(frame, BI_RGB);
+		//process_frame((uint8_t*)data, oip->w, oip->h);
+
+		if (AVIStreamWrite(avi.pvideo, frame, 1, data, bmih.biSizeImage, AVIIF_KEYFRAME, NULL, NULL) != S_OK) {
+			break;
+		}
+
+		// オーディオの書き込み
+		int audioPos = (int)((double)frame / video.dwRate * video.dwScale * oip->audio_rate);
+		int audioNum = (int)((double)(frame + 1) / video.dwRate * video.dwScale * oip->audio_rate) - audioPos;
+		int audioReaded = 0;
+		data = oip->func_get_audio(audioPos, audioNum, &audioReaded, WAVE_FORMAT_PCM);
+		if (audioReaded == 0) continue;
+		if (AVIStreamWrite(avi.paudio, audioPos, audioReaded, data, audioReaded * wf.nBlockAlign, 0, NULL, NULL) != S_OK) {
+			break;
+		}
+	}
+
+	return true;
+}
+
+
+
 
 //---------------------------------------------------------------------
 //	設定ダイアログ
