@@ -117,8 +117,8 @@ static const unsigned char palette16[16][3] = {
 	{0, 0, 255},     {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
 };
 
-// パレット216 WebSafe (216色)
-static unsigned char palette_websafe[216][3] = {};
+// パレット256 WebSafe (216色)
+static unsigned char palette_websafe[256][3] = {};
 
 inline void init_palette_websafe() {
 	int idx = 0;
@@ -209,9 +209,9 @@ inline void quantize(
 	double d = get_bayer(x, y);
 	auto best = quantize_index(palette, r, g, b, x, y);
 
-	out_r = palette16[best][0];
-	out_g = palette16[best][1];
-	out_b = palette16[best][2];
+	out_r = palette[best][0];
+	out_g = palette[best][1];
+	out_b = palette[best][2];
 }
 
 void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
