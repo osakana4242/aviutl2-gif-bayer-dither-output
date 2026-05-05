@@ -174,13 +174,12 @@ bool func_output2(OUTPUT_INFO* oip) {
 	return true;
 }
 
+inline int calc_stride(int w) {
+	return (w * 3 + 3) & ~3;
+}
 
-
-
-void process_frame(uint8_t* data, int w, int h) {
+void process_frame(uint8_t* data, int w, int h, int stride) {
 	// BI_RGB は下から上に並んでる
-	int stride = w * 3;
-
 	for (int y = 0; y < h; y++) {
 		int yy = h - 1 - y; // 上下反転
 		uint8_t* row = data + yy * stride;
@@ -191,6 +190,7 @@ void process_frame(uint8_t* data, int w, int h) {
 			uint8_t b = px[0];
 			uint8_t g = px[1];
 			uint8_t r = px[2];
+
 			quantize(g_config.mode, r, g, b, x, y, g_config.bayer, g_config.strength, r, g, b);
 
 			px[0] = b;
@@ -206,17 +206,22 @@ bool func_output(OUTPUT_INFO* oip) {
 		return false;
 	}
 
-	// ビデオストリームの設定
+	// ===== stride 計算 =====
+	int stride = calc_stride(oip->w);
+
+	// ===== ビデオストリーム設定 =====
 	AVISTREAMINFO video{};
 	video.fccType = streamtypeVIDEO;
-	video.fccHandler = BI_RGB;
+	video.fccHandler = 0; // ← BI_RGBじゃなくてこっち
 	video.dwRate = oip->rate;
 	video.dwScale = oip->scale;
 	video.rcFrame.right = oip->w;
 	video.rcFrame.bottom = oip->h;
+
 	if (AVIFileCreateStream(avi.pfile, &avi.pvideo, &video) != S_OK) {
 		return false;
 	}
+
 	BITMAPINFOHEADER bmih{};
 	bmih.biSize = sizeof(BITMAPINFOHEADER);
 	bmih.biWidth = oip->w;
@@ -224,21 +229,24 @@ bool func_output(OUTPUT_INFO* oip) {
 	bmih.biPlanes = 1;
 	bmih.biBitCount = 24;
 	bmih.biCompression = BI_RGB;
-	bmih.biSizeImage = oip->w * oip->h * 3;
+	bmih.biSizeImage = stride * oip->h; // ← 修正ポイント
+
 	if (AVIStreamSetFormat(avi.pvideo, 0, &bmih, sizeof(bmih)) != S_OK) {
 		return false;
 	}
 
-	// オーディオストリームの設定
+	// ===== オーディオ（そのまま） =====
 	AVISTREAMINFO audio{};
 	audio.fccType = streamtypeAUDIO;
 	audio.fccHandler = WAVE_FORMAT_PCM;
 	audio.dwSampleSize = oip->audio_ch * 2;
 	audio.dwRate = oip->audio_rate * audio.dwSampleSize;
 	audio.dwScale = audio.dwSampleSize;
+
 	if (AVIFileCreateStream(avi.pfile, &avi.paudio, &audio) != S_OK) {
 		return false;
 	}
+
 	WAVEFORMATEX wf{};
 	wf.wFormatTag = WAVE_FORMAT_PCM;
 	wf.nChannels = oip->audio_ch;
@@ -246,38 +254,72 @@ bool func_output(OUTPUT_INFO* oip) {
 	wf.wBitsPerSample = 16;
 	wf.nBlockAlign = wf.nChannels * (wf.wBitsPerSample / 8);
 	wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;
+
 	if (AVIStreamSetFormat(avi.paudio, 0, &wf, sizeof(wf)) != S_OK) {
 		return false;
 	}
 
-	oip->func_set_buffer_size(5, 10); // データ取得バッファ数を変更
+	oip->func_set_buffer_size(5, 10);
+
+	// ===== 1フレーム分の作業バッファ =====
+	std::vector<uint8_t> framebuf(stride * oip->h);
 
 	for (int frame = 0; frame < oip->n; frame++) {
-		oip->func_rest_time_disp(frame, oip->n); // 残り時間を表示
-		if (oip->func_is_abort()) break; // 中断の確認
+		oip->func_rest_time_disp(frame, oip->n);
+		if (oip->func_is_abort()) break;
 
-		// ビデオの書き込み
-		void* data = oip->func_get_video(frame, BI_RGB);
-		//process_frame((uint8_t*)data, oip->w, oip->h);
+		// 元データ取得（詰まったRGB）
+		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
 
-		if (AVIStreamWrite(avi.pvideo, frame, 1, data, bmih.biSizeImage, AVIIF_KEYFRAME, NULL, NULL) != S_OK) {
+		// ===== stride付きに変換 =====
+		uint8_t* dst = framebuf.data();
+		int src_stride = oip->w * 3;
+
+		for (int y = 0; y < oip->h; y++) {
+			memcpy(dst + y * stride, src + y * src_stride, src_stride);
+			// パディング部分は未初期化でも基本OK（気になるなら0埋め）
+		}
+
+		// ===== エフェクト適用 =====
+		process_frame(framebuf.data(), oip->w, oip->h, stride);
+
+		// ===== 書き込み =====
+		if (AVIStreamWrite(
+			avi.pvideo,
+			frame,
+			1,
+			framebuf.data(),
+			bmih.biSizeImage,
+			AVIIF_KEYFRAME,
+			NULL,
+			NULL) != S_OK) {
 			break;
 		}
 
-		// オーディオの書き込み
+		// ===== オーディオ =====
 		int audioPos = (int)((double)frame / video.dwRate * video.dwScale * oip->audio_rate);
 		int audioNum = (int)((double)(frame + 1) / video.dwRate * video.dwScale * oip->audio_rate) - audioPos;
+
 		int audioReaded = 0;
-		data = oip->func_get_audio(audioPos, audioNum, &audioReaded, WAVE_FORMAT_PCM);
+		void* aud = oip->func_get_audio(audioPos, audioNum, &audioReaded, WAVE_FORMAT_PCM);
+
 		if (audioReaded == 0) continue;
-		if (AVIStreamWrite(avi.paudio, audioPos, audioReaded, data, audioReaded * wf.nBlockAlign, 0, NULL, NULL) != S_OK) {
+
+		if (AVIStreamWrite(
+			avi.paudio,
+			audioPos,
+			audioReaded,
+			aud,
+			audioReaded * wf.nBlockAlign,
+			0,
+			NULL,
+			NULL) != S_OK) {
 			break;
 		}
 	}
 
 	return true;
 }
-
 
 
 
