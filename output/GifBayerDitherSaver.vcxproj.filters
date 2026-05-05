@@ -48,6 +48,9 @@
     <ClInclude Include="unistd.h">
       <Filter>lib</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\common.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
