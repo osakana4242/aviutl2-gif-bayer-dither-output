@@ -50,16 +50,16 @@ OUTPUT_PLUGIN_TABLE output_plugin_table = {
 //---------------------------------------------------------------------
 
 enum class ColorMode {
-	WebSafe = 0,
-	VGA16   = 1,
-	RGB8    = 2,
+	C256 = 0,
+	C16 = 1,
+	C8 = 2,
 	Count,
 };
 
 static const wchar_t* g_mode_display_names[] = {
-	L"WebSafe",
-	L"VGA16",
-	L"RGB8"
+	L"パレット256色",
+	L"パレット16色",
+	L"パレット8色"
 };
 
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
@@ -87,7 +87,7 @@ static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
 // 設定構造体
 //---------------------------------------------------------------------
 struct CONFIG {
-	ColorMode mode = ColorMode::RGB8;
+	ColorMode mode = ColorMode::C8;
 	BayerMode bayer = BayerMode::Bayer4x4;
 	double strength = 2.0;
 };
@@ -97,8 +97,8 @@ static CONFIG g_config;
 //---------------------------------------------------------------------
 // パレット
 
-// パレット8 RGB8
-static const unsigned char palette8[8][3] = {
+// パレット8
+static const unsigned char palette_8[8][3] = {
 	{0, 0, 0},
 	{0, 0, 255},
 	{0, 255, 0},
@@ -109,28 +109,48 @@ static const unsigned char palette8[8][3] = {
 	{255, 255, 255}
 };
 
-// パレット16 VGA
-static const unsigned char palette16[16][3] = {
+// パレット16
+static const unsigned char palette_16[16][3] = {
 	{0, 0, 0},       {128, 0, 0},   {0, 128, 0},   {128, 128, 0},
 	{0, 0, 128},     {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
 	{128, 128, 128}, {255, 0, 0},   {0, 255, 0},   {255, 255, 0},
 	{0, 0, 255},     {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
 };
 
-// パレット256 WebSafe (216色)
-static unsigned char palette_websafe[256][3] = {};
+// パレット256
+static unsigned char palette_256[256][3] = {};
 
 inline void init_palette_websafe() {
 	int idx = 0;
+
+	// ① WebSafe (216色)
 	for (int r = 0; r < 6; r++) {
 		for (int g = 0; g < 6; g++) {
 			for (int b = 0; b < 6; b++) {
-				palette_websafe[idx][0] = r * 51;
-				palette_websafe[idx][1] = g * 51;
-				palette_websafe[idx][2] = b * 51;
+				palette_256[idx][0] = r * 51;
+				palette_256[idx][1] = g * 51;
+				palette_256[idx][2] = b * 51;
 				idx++;
 			}
 		}
+	}
+
+	// ② グレースケール（16色くらい）
+	for (int i = 0; i < 16; i++) {
+		int v = i * 255 / 15;
+		palette_256[idx][0] = v;
+		palette_256[idx][1] = v;
+		palette_256[idx][2] = v;
+		idx++;
+	}
+
+	// ③ 補間色（残り）
+	while (idx < 256) {
+		int t = idx - 232; // 適当な分布
+		palette_256[idx][0] = (t * 37) % 256;
+		palette_256[idx][1] = (t * 73) % 256;
+		palette_256[idx][2] = (t * 109) % 256;
+		idx++;
 	}
 }
 
@@ -218,21 +238,21 @@ void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h) {
 	uint8_t(*func)(int, int, int, int, int) = nullptr;
 
 	switch (g_config.mode) {
-	case ColorMode::WebSafe:
+	case ColorMode::C256:
 		func = [](int r, int g, int b, int x, int y) {
-			return quantize_index(palette_websafe, r, g, b, x, y);
+			return quantize_index(palette_256, r, g, b, x, y);
 		};
 		break;
 
-	case ColorMode::VGA16:
+	case ColorMode::C16:
 		func = [](int r, int g, int b, int x, int y) {
-			return quantize_index(palette16, r, g, b, x, y);
+			return quantize_index(palette_16, r, g, b, x, y);
 		};
 		break;
 
-	case ColorMode::RGB8:
+	case ColorMode::C8:
 		func = [](int r, int g, int b, int x, int y) {
-			return quantize_index(palette8, r, g, b, x, y);
+			return quantize_index(palette_8, r, g, b, x, y);
 		};
 		break;
 	}
@@ -273,12 +293,12 @@ ColorMapObject* create_palette(const unsigned char (&palette)[N][3]) {
 
 ColorMapObject* create_palette() {
 	switch (g_config.mode) {
-	case ColorMode::WebSafe:
-		return create_palette(palette_websafe);
-	case ColorMode::VGA16:
-		return create_palette(palette16);
-	case ColorMode::RGB8:
-		return create_palette(palette8);
+	case ColorMode::C256:
+		return create_palette(palette_256);
+	case ColorMode::C16:
+		return create_palette(palette_16);
+	case ColorMode::C8:
+		return create_palette(palette_8);
 	default:
 		return nullptr;
 	}
