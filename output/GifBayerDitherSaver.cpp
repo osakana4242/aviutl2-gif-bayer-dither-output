@@ -505,4 +505,3 @@ LPCWSTR func_get_config_text() {
 
 	return buf;
 }
-

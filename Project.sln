@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 15 for Windows Desktop
 VisualStudioVersion = 15.0.37131.7
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Project", "Project\Project.vcxproj", "{D5450DF2-EFA7-476B-844C-774FE35CA160}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BayerDitherFilter", "filter\BayerDitherFilter.vcxproj", "{5494434B-BE18-4F4C-938D-DFC028C4FE26}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GifBayerDitherSaver", "output\GifBayerDitherSaver.vcxproj", "{D5450DF2-EFA7-476B-844C-774FE35CA160}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +15,14 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Debug|x64.ActiveCfg = Debug|x64
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Debug|x64.Build.0 = Debug|x64
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Debug|x86.ActiveCfg = Debug|Win32
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Debug|x86.Build.0 = Debug|Win32
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Release|x64.ActiveCfg = Release|x64
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Release|x64.Build.0 = Release|x64
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Release|x86.ActiveCfg = Release|Win32
+		{5494434B-BE18-4F4C-938D-DFC028C4FE26}.Release|x86.Build.0 = Release|Win32
 		{D5450DF2-EFA7-476B-844C-774FE35CA160}.Debug|x64.ActiveCfg = Debug|x64
 		{D5450DF2-EFA7-476B-844C-774FE35CA160}.Debug|x64.Build.0 = Debug|x64
 		{D5450DF2-EFA7-476B-844C-774FE35CA160}.Debug|x86.ActiveCfg = Debug|Win32
