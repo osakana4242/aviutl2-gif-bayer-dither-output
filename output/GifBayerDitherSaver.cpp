@@ -179,14 +179,12 @@ inline int calc_stride(int w) {
 }
 
 void process_frame(uint8_t* data, int w, int h, int stride) {
-	// BI_RGB は下から上に並んでる
 	for (int y = 0; y < h; y++) {
-		int yy = h - 1 - y; // 上下反転
-		uint8_t* row = data + yy * stride;
+		uint8_t* row = data + y * stride; // ←そのまま
 
 		for (int x = 0; x < w; x++) {
 			uint8_t* px = row + x * 3;
-			// BGR順
+
 			uint8_t b = px[0];
 			uint8_t g = px[1];
 			uint8_t r = px[2];
@@ -261,40 +259,26 @@ bool func_output(OUTPUT_INFO* oip) {
 
 	oip->func_set_buffer_size(5, 10);
 
-	// ===== 1フレーム分の作業バッファ =====
-	std::vector<uint8_t> framebuf(stride * oip->h);
-
 	for (int frame = 0; frame < oip->n; frame++) {
 		oip->func_rest_time_disp(frame, oip->n);
 		if (oip->func_is_abort()) break;
 
-		// 元データ取得（詰まったRGB）
-		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
 
-		// ===== stride付きに変換 =====
-		uint8_t* dst = framebuf.data();
-		int src_stride = oip->w * 3;
-
-		for (int y = 0; y < oip->h; y++) {
-			memcpy(dst + y * stride, src + y * src_stride, src_stride);
-			// パディング部分は未初期化でも基本OK（気になるなら0埋め）
-		}
+		uint8_t* data = (uint8_t*)oip->func_get_video(frame, BI_RGB);
 
 		// ===== エフェクト適用 =====
-		process_frame(framebuf.data(), oip->w, oip->h, stride);
+		process_frame(data, oip->w, oip->h, stride);
 
-		// ===== 書き込み =====
-		if (AVIStreamWrite(
-			avi.pvideo,
-			frame,
-			1,
-			framebuf.data(),
-			bmih.biSizeImage,
-			AVIIF_KEYFRAME,
-			NULL,
-			NULL) != S_OK) {
-			break;
-		}
+		AVIStreamWrite(
+				avi.pvideo,
+				frame,
+				1,
+				data,
+				stride * oip->h,
+				AVIIF_KEYFRAME,
+				NULL,
+				NULL
+		);
 
 		// ===== オーディオ =====
 		int audioPos = (int)((double)frame / video.dwRate * video.dwScale * oip->audio_rate);
