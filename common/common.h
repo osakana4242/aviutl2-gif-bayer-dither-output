@@ -45,7 +45,7 @@ static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
 // パレット
 
 // パレット8
-static const unsigned char palette_8[8][3] = {
+inline constexpr unsigned char palette_8[8][3] = {
 	{0, 0, 0},
 	{0, 0, 255},
 	{0, 255, 0},
@@ -57,7 +57,7 @@ static const unsigned char palette_8[8][3] = {
 };
 
 // パレット16
-static const unsigned char palette_16[16][3] = {
+inline constexpr unsigned char palette_16[16][3] = {
 	{0, 0, 0},       {128, 0, 0},   {0, 128, 0},   {128, 128, 0},
 	{0, 0, 128},     {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
 	{128, 128, 128}, {255, 0, 0},   {0, 255, 0},   {255, 255, 0},
@@ -65,7 +65,7 @@ static const unsigned char palette_16[16][3] = {
 };
 
 // パレット256
-static unsigned char palette_256[256][3] = {};
+inline unsigned char palette_256[256][3] = {};
 
 inline void init_palette_websafe() {
 	int idx = 0;
@@ -101,10 +101,15 @@ inline void init_palette_websafe() {
 	}
 }
 
+struct PaletteInitializer {
+    PaletteInitializer() { init_palette_websafe(); }
+};
+inline PaletteInitializer g_palette_initializer;
+
 //---------------------------------------------------------------------
 // Bayer
 
-static const int bayer8x8[8][8] = {
+inline constexpr int bayer8x8[8][8] = {
 		{ 0,48,12,60,3,51,15,63 },
 		{32,16,44,28,35,19,47,31},
 		{ 8,56, 4,52,11,59, 7,55},
@@ -115,7 +120,7 @@ static const int bayer8x8[8][8] = {
 		{42,26,38,22,41,25,37,21}
 };
 
-static const int bayer4x4[4][4] = {
+inline constexpr int bayer4x4[4][4] = {
 	{ 0, 8, 2,10 },
 	{12, 4,14, 6 },
 	{ 3,11, 1, 9 },
@@ -220,7 +225,7 @@ inline uint8_t quantize_index(ColorMode mode,
 }
 
 
-void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, ColorMode mode, BayerMode bayer, float strength) {
+inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, ColorMode mode, BayerMode bayer, float strength) {
 	int stride = w * 3;
 
 	for (int y = 0; y < h; y++) {

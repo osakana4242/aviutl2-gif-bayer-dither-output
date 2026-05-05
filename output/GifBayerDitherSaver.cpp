@@ -87,7 +87,6 @@ ColorMapObject* create_palette() {
 //	プラグインDLL初期化関数 (未定義なら呼ばれません)
 //---------------------------------------------------------------------
 EXTERN_C __declspec(dllexport) bool InitializePlugin(DWORD version) { // versionは本体のバージョン番号
-	init_palette_websafe();
 	return true;
 }
 

@@ -19,15 +19,15 @@ FILTER_ITEM_SELECT::ITEM mode_list[] = {
 	{g_mode_display_names[(int)ColorMode::C8], (int)ColorMode::C8},
 	{nullptr}
 };
-auto mode = FILTER_ITEM_SELECT(L"カラーモード", 0, mode_list);
-auto strength = FILTER_ITEM_TRACK(L"ディザ強度", 1.0, 0.0, 2.0, 0.01);
+auto mode = FILTER_ITEM_SELECT(L"カラーモード", (int)ColorMode::C16, mode_list);
+auto strength = FILTER_ITEM_TRACK(L"ディザ強度", 2.0, 0.0, 2.0, 0.01);
 
 FILTER_ITEM_SELECT::ITEM bayer_list[] = {
 	{g_bayer_display_names[(int)BayerMode::Bayer8x8], (int)BayerMode::Bayer8x8},
 	{g_bayer_display_names[(int)BayerMode::Bayer4x4], (int)BayerMode::Bayer4x4},
 	{ nullptr }
 };
-auto bayer_mode = FILTER_ITEM_SELECT(L"ベイヤーサイズ", 0, bayer_list);
+auto bayer_mode = FILTER_ITEM_SELECT(L"ベイヤーサイズ", (int)BayerMode::Bayer4x4, bayer_list);
 
 void* items[] = { &mode, &bayer_mode, &strength, nullptr };
 
@@ -44,7 +44,23 @@ FILTER_PLUGIN_TABLE filter_plugin_table = {
 	nullptr // 音声フィルタ処理関数へのポインタ (FLAG_AUDIOが有効の時のみ呼ばれます)
 };
 
-EXTERN_C __declspec(dllexport) FILTER_PLUGIN_TABLE *GetFilterPluginTable(void) {
+//---------------------------------------------------------------------
+//	プラグインDLL初期化関数 (未定義なら呼ばれません)
+//---------------------------------------------------------------------
+EXTERN_C __declspec(dllexport) bool InitializePlugin(DWORD version) { // versionは本体のバージョン番号
+	return true;
+}
+
+//---------------------------------------------------------------------
+//	プラグインDLL解放関数 (未定義なら呼ばれません)
+//---------------------------------------------------------------------
+EXTERN_C __declspec(dllexport) void UninitializePlugin() {
+}
+
+//---------------------------------------------------------------------
+//	フィルタ構造体のポインタを渡す関数
+//---------------------------------------------------------------------
+EXTERN_C __declspec(dllexport) FILTER_PLUGIN_TABLE* GetFilterPluginTable(void) {
 	return &filter_plugin_table;
 }
 
