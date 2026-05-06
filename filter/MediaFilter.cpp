@@ -147,11 +147,13 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 	config.color_shift = (int)color_shift.value;
 	config.perceptual_color_diff = (int)perceptual_color_diff.value;
 
-
-	if (config.color_mode == ColorMode::Custom) {
+	const auto model = get_color_model(config.color_mode);
+	if (model->palette == nullptr) {
 		auto samples = collect_histogram(config, p, w, h);
-		auto palette = median_cut_histogram(samples, config.color_count);
-		palette_custom_size = config.color_count;
+		palette_custom_size = model->palette_size != 0 ?
+			model->palette_size :
+			config.color_count;
+		auto palette = median_cut_histogram(samples, palette_custom_size);
 		for (size_t i = 0; i < palette.size(); i++) {
 			palette_custom[i][0] = palette[i].r;
 			palette_custom[i][1] = palette[i].g;

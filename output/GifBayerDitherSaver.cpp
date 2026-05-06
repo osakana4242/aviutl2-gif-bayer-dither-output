@@ -128,7 +128,7 @@ std::vector<HistColor> collect_histogram(OUTPUT_INFO* oip, int w, int h, int str
 	int shift = g_config.bayerDither.color_shift;
 
 	for (int frame = 0; frame < oip->n; frame += frame_step) {
-
+		oip->func_rest_time_disp(frame, oip->n);
 		if (oip->func_is_abort()) break;
 
 		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
@@ -187,10 +187,13 @@ bool func_output(OUTPUT_INFO* oip) {
 
 	int stride = calc_stride(oip->w);
 
-	if (g_config.bayerDither.color_mode == ColorMode::Custom) {
+	const auto model = get_color_model(g_config.bayerDither.color_mode);
+	if (model->palette == nullptr) {
 		auto samples = collect_histogram(oip, oip->w, oip->h, stride);
-		auto palette = median_cut_histogram(samples, g_config.bayerDither.color_count);
-		palette_custom_size = g_config.bayerDither.color_count;
+		palette_custom_size = model->palette_size != 0 ?
+			model->palette_size :
+			g_config.bayerDither.color_count;
+		auto palette = median_cut_histogram(samples, palette_custom_size);
 		for (size_t i = 0; i < palette.size(); i++) {
 			palette_custom[i][0] = palette[i].r;
 			palette_custom[i][1] = palette[i].g;
@@ -381,7 +384,9 @@ bool func_output_avi(OUTPUT_INFO* oip) {
 
 void update_custom_ui(HWND hDlg, ColorMode mode)
 {
-	bool is_custom = (mode == ColorMode::Custom);
+	const auto model = get_color_model(g_config.bayerDither.color_mode);
+
+	bool is_custom = (model->palette == nullptr && model->palette_size == 0);
 
 	int ids[] = {
 		IDC_COLOR_COUNT_LABEL,
@@ -608,11 +613,13 @@ bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 LPCWSTR func_get_config_text() {
 	static wchar_t buf[256];
 
-	const wchar_t* mode = g_mode_display_names[(int)g_config.bayerDither.color_mode];
+	const auto& model = get_color_model(g_config.bayerDither.color_mode);
+
+	const wchar_t* mode = model->name;
 
 	const wchar_t* bayer =g_bayer_display_names[(int)g_config.bayerDither.bayer];
 
-	swprintf_s(buf, L"%s / Bayer %s / 強度 %.2f",
+	swprintf_s(buf, L"パレット %s / ベイヤーサイズ %s / 強度 %.2f",
 						 mode, bayer, g_config.bayerDither.strength);
 
 	return buf;

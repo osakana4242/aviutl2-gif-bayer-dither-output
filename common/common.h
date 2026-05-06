@@ -17,24 +17,9 @@ enum class ColorMode {
 	C8,
 	C16,
 	C216,
-	// C256,
+	C256,
 	Count,
 };
-
-static const wchar_t* g_mode_display_names[] = {
-	L"カスタム",
-	L"選択 16色",
-	L"選択 256色",
-	L"VGA 2色",
-	L"VGA 4色",
-	L"VGA 8色",
-	L"VGA 16色",
-	L"Webセーフ 216色",
-	// L"固定256色",
-};
-
-static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
-	"mode name mismatch");
 
 struct ColorModeModel {
 	ColorMode id;
@@ -42,7 +27,6 @@ struct ColorModeModel {
 	const unsigned char (*palette)[3];
 	int palette_size;
 };
-
 
 //---------------------------------------------------------------------
 // BayerMode
