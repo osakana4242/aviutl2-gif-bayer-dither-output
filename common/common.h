@@ -49,6 +49,7 @@ struct BayerDitherConfig {
 	ColorMode mode = ColorMode::C8;
 	BayerMode bayer = BayerMode::Bayer4x4;
 	float strength = 2.0;
+	int hoge = 1;
 };
 
 //---------------------------------------------------------------------
@@ -205,7 +206,9 @@ inline uint8_t quantize_index(
 		int dg = g - palette[i][1];
 		int db = b - palette[i][2];
 		int dist = dr*dr + dg*dg + db*db;
-		//int dist = 3*dr*dr + 6*dg*dg + 1*db*db; // にんげん向け. 緑の重みを強める.
+		if (config.hoge == 1) {
+			dist = 3 * dr*dr + 6 * dg*dg + 1 * db*db; // にんげん向け. 緑の重みを強める.
+		}
 
 		if (dist < best_dist) {
 			best_dist = dist;

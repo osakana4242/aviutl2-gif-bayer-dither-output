@@ -13,13 +13,17 @@ bool func_proc_video(FILTER_PROC_VIDEO *video);
 //---------------------------------------------------------------------
 // 設定項目
 //---------------------------------------------------------------------
-FILTER_ITEM_SELECT::ITEM mode_list[] = {
-	{g_mode_display_names[(int)ColorMode::C256], (int)ColorMode::C256},
-	{g_mode_display_names[(int)ColorMode::C16], (int)ColorMode::C16},
-	{g_mode_display_names[(int)ColorMode::C8], (int)ColorMode::C8},
-	{nullptr}
-};
+FILTER_ITEM_SELECT::ITEM mode_list[(int)ColorMode::Count] = {};
 auto mode = FILTER_ITEM_SELECT(L"カラーモード", (int)ColorMode::C16, mode_list);
+static struct ModeListInitializer{
+	ModeListInitializer() {
+		for ( int i = 0; i < (int)ColorMode::Count; i++) {
+			mode_list[i] = { g_mode_display_names[i], i };
+		}
+		mode_list[(int)ColorMode::Count] = { nullptr };
+	}
+} _mode_list_initializer;
+
 auto strength = FILTER_ITEM_TRACK(L"ディザ強度", 2.0, 0.0, 2.0, 0.01);
 
 FILTER_ITEM_SELECT::ITEM bayer_list[] = {
@@ -29,7 +33,9 @@ FILTER_ITEM_SELECT::ITEM bayer_list[] = {
 };
 auto bayer_mode = FILTER_ITEM_SELECT(L"ベイヤーサイズ", (int)BayerMode::Bayer4x4, bayer_list);
 
-void* items[] = { &mode, &bayer_mode, &strength, nullptr };
+auto hoge= FILTER_ITEM_TRACK(L"hoge", 0, 0, 1, 1);
+
+void* items[] = { &mode, &bayer_mode, &hoge, nullptr };
 
 //---------------------------------------------------------------------
 // プラグイン定義
@@ -79,6 +85,7 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 	config.mode = (ColorMode)mode.value;
 	config.bayer = (BayerMode)bayer_mode.value;
 	config.strength = strength.value;
+	config.hoge = (int)hoge.value;
 
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
