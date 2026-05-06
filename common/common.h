@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-
+#include "median_cut.h"
 
 //---------------------------------------------------------------------
 // ColoMode
@@ -301,3 +301,4 @@ inline void convert_to_indexed(const BayerDitherConfig& config, uint8_t* src, ui
 	convert_to_indexed(config, src, dst, w, h, stride);
 }
 
+//------------------------------------------------------------------------------

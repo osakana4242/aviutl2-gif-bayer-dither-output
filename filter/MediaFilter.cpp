@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------
 //	Bayer Dithering + Web Safe Color Filter for AviUtl ExEdit2
 //----------------------------------------------------------------------------------
+
+#define NOMINMAX
+
 #include <algorithm>
 #include <memory>
 #include <windows.h>

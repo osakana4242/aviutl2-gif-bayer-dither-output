@@ -173,6 +173,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\common\common.h" />
+    <ClInclude Include="..\common\median_cut.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="lib\giflib\lib\gif_hash.h" />
     <ClInclude Include="lib\giflib\lib\gif_lib.h" />
@@ -183,6 +184,8 @@
     <ClInclude Include="unistd.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\common.cpp" />
+    <ClCompile Include="..\common\median_cut.cpp" />
     <ClCompile Include="GifBayerDitherSaver.cpp" />
     <ClCompile Include="lib\giflib\lib\egif_lib.c" />
     <ClCompile Include="lib\giflib\lib\gifalloc.c" />

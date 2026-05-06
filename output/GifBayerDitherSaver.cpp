@@ -2,6 +2,8 @@
 //	GIFベイヤーディザ出力プラグイン for AviUtl ExEdit2
 //----------------------------------------------------------------------------------
 
+#define NOMINMAX
+
 #include <string>
 #include <algorithm>
 #include <vector>

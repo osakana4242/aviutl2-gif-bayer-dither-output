@@ -172,12 +172,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\common\common.h" />
+    <ClInclude Include="..\common\median_cut.h" />
     <ClInclude Include="filter2.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\common.cpp" />
+    <ClCompile Include="..\common\median_cut.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="MediaFilter.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
