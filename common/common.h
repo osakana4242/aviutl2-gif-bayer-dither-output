@@ -12,6 +12,7 @@ enum class ColorMode {
 	C216 = 1,
 	C16 = 2,
 	C8 = 3,
+	Custom = 4,
 	Count,
 };
 
@@ -19,7 +20,8 @@ static const wchar_t* g_mode_display_names[] = {
 	L"パレット256色",
 	L"パレット216色",
 	L"パレット16色",
-	L"パレット8色"
+	L"パレット8色",
+	L"カスタム",
 };
 
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
@@ -50,6 +52,7 @@ struct BayerDitherConfig {
 	BayerMode bayer = BayerMode::Bayer4x4;
 	float strength = 2.0;
 	int hoge = 1;
+	int color_count = 16;
 };
 
 //---------------------------------------------------------------------
@@ -142,6 +145,10 @@ inline void init_palette_256() {
 	}
 }
 
+// パレットカスタム
+inline unsigned char palette_custom[256][3] = {};
+inline size_t palette_custom_size = 16;
+
 struct PaletteInitializer {
 	PaletteInitializer() {
 		init_palette_216();
@@ -188,6 +195,7 @@ template<size_t N>
 inline uint8_t quantize_index(
 	const BayerDitherConfig& config,
 	const unsigned char (&palette)[N][3],
+	int count,
 	int r, int g, int b,
 	int x, int y)
 {
@@ -201,7 +209,7 @@ inline uint8_t quantize_index(
 	int best = 0;
 	int best_dist = INT_MAX;
 
-	for (int i = 0; i < N; i++) {
+	for (int i = 0; i < count; i++) {
 		int dr = r - palette[i][0];
 		int dg = g - palette[i][1];
 		int db = b - palette[i][2];
@@ -222,11 +230,12 @@ template<size_t N>
 inline void quantize(
 	const BayerDitherConfig& config,
 	const unsigned char (&palette)[N][3],
+	int count,
 	int r, int g, int b,
 	int x, int y,
 	unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
 
-	auto best = quantize_index(config, palette, r, g, b, x, y);
+	auto best = quantize_index(config, palette, count, r, g, b, x, y);
 
 	out_r = palette[best][0];
 	out_g = palette[best][1];
@@ -241,16 +250,19 @@ inline void quantize(const BayerDitherConfig& config,
 
 	switch (config.mode) {
 	case ColorMode::C256:
-		quantize(config, palette_256, r, g, b, x, y, out_r, out_g, out_b);
+		quantize(config, palette_256, 256, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	case ColorMode::C216:
-		quantize(config, palette_216, r, g, b, x, y, out_r, out_g, out_b);
+		quantize(config, palette_216, 216, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	case ColorMode::C16:
-		quantize(config, palette_16, r, g, b, x, y, out_r, out_g, out_b);
+		quantize(config, palette_16, 16, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	case ColorMode::C8:
-		quantize(config, palette_8, r, g, b, x, y, out_r, out_g, out_b);
+		quantize(config, palette_8, 8, r, g, b, x, y, out_r, out_g, out_b);
+		break;
+	case ColorMode::Custom:
+		quantize(config, palette_custom, palette_custom_size, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	default:
 		break;
@@ -264,13 +276,15 @@ inline uint8_t quantize_index(const BayerDitherConfig& config,
 															int x, int y) {
 	switch (config.mode) {
 	case ColorMode::C256:
-		return quantize_index(config, palette_256, r, g, b, x, y);
+		return quantize_index(config, palette_256, 256, r, g, b, x, y);
 	case ColorMode::C216:
-		return quantize_index(config, palette_216, r, g, b, x, y);
+		return quantize_index(config, palette_216, 216, r, g, b, x, y);
 	case ColorMode::C16:
-		return quantize_index(config, palette_16, r, g, b, x, y);
+		return quantize_index(config, palette_16, 16, r, g, b, x, y);
 	case ColorMode::C8:
-		return quantize_index(config, palette_8, r, g, b, x, y);
+		return quantize_index(config, palette_8, 8, r, g, b, x, y);
+	case ColorMode::Custom:
+		return quantize_index(config, palette_custom,  palette_custom_size, r, g, b, x, y);
 	default:
 		return 0;
 	}

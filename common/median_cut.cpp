@@ -6,19 +6,12 @@
 #include <algorithm>
 #include <numeric>
 #include <unordered_map>
-#include "common.h"
+
+#include "median_cut.h"
 
 //--------------------------------
 // 基本構造体
 //--------------------------------
-struct Color {
-    uint8_t r, g, b;
-};
-
-struct HistColor {
-    uint8_t r, g, b;
-    uint32_t count;
-};
 
 struct Box {
     std::vector<int> indices; // hist への参照
@@ -30,7 +23,7 @@ struct Box {
 //--------------------------------
 // ヒストグラム生成
 //--------------------------------
-std::vector<HistColor> build_histogram(const std::vector<Color>& samples) {
+static std::vector<HistColor> build_histogram(const std::vector<Color>& samples) {
 
     std::unordered_map<uint32_t, uint32_t> map;
     map.reserve(samples.size());
@@ -154,10 +147,7 @@ static Color average_color(const Box& box, const std::vector<HistColor>& hist) {
 //--------------------------------
 // メイン：ヒストグラムMedian Cut
 //--------------------------------
-std::vector<Color> median_cut_histogram(const std::vector<Color>& samples, int target_colors) {
-
-    // ① ヒストグラム化
-    auto hist = build_histogram(samples);
+std::vector<Color> median_cut_histogram(const std::vector<HistColor>& hist, int target_colors) {
 
     std::vector<Box> boxes;
 
