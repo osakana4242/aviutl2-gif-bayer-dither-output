@@ -93,7 +93,16 @@ std::vector<HistColor> collect_histogram(PIXEL_RGBA* p, int w, int h) {
 				(p->r << 16) |
 				(p->g << 8) |
 				(p->b);
-			map[key]++;
+
+			//uint8_t r = (p->r >> 1);
+			//uint8_t g = (p->g >> 1);
+			//uint8_t b = (p->b >> 1);
+			//uint32_t key =
+			//	(r << 10) |
+			//	(g << 5) |
+			//	b;
+
+				map[key]++;
 			p++;
 		}
 	}
@@ -108,7 +117,13 @@ std::vector<HistColor> collect_histogram(PIXEL_RGBA* p, int w, int h) {
 				(uint8_t)(k >> 8),
 				(uint8_t)(k),
 				cnt
-									 });
+		});
+		//hist.push_back({
+		//		(uint8_t)(((uint8_t)(k >> 10)) << 1),
+		//		(uint8_t)(((uint8_t)(k >> 5)) << 1),
+		//		(uint8_t)(((uint8_t)(k)) << 1),
+		//		cnt
+		//});
 	}
 
 	return hist;

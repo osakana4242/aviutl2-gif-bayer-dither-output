@@ -158,7 +158,7 @@ struct PaletteInitializer {
 };
 inline PaletteInitializer g_palette_initializer;
 
-inline uint8_t get_palette(const BayerDitherConfig& config, const unsigned char (*&palette)[3]) {
+inline size_t get_palette(const BayerDitherConfig& config, const unsigned char (*&palette)[3]) {
 	switch (config.mode) {
 	case ColorMode::C256:
 		palette = palette_256;
@@ -250,21 +250,6 @@ inline uint8_t quantize_index(
 		}
 	}
 	return (uint8_t)best;
-}
-
-inline void quantize(
-	const BayerDitherConfig& config,
-	const unsigned char palette[][3],
-	int count,
-	int r, int g, int b,
-	int x, int y,
-	unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
-
-	auto best = quantize_index(config, palette, count, r, g, b, x, y);
-
-	out_r = palette[best][0];
-	out_g = palette[best][1];
-	out_b = palette[best][2];
 }
 
 inline void quantize(const BayerDitherConfig& config,
