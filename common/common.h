@@ -56,9 +56,9 @@ struct BayerDitherConfig {
 	ColorMode mode = ColorMode::C8;
 	BayerMode bayer = BayerMode::Bayer4x4;
 	float strength = 2.0;
-	int hoge = 1;
 	int color_count = 16;
-	int color_shift = 0;
+	int color_shift = 3; // RGB各要素に適用する量子化シフト数. 0: 256段階, 3: 32段階(32768色), 4: 16段階(4096色), 5: 8段階(512色)
+	int hoge = 1; // にんげん向け色距離補正. 0: OFF, 1: ON
 };
 
 //---------------------------------------------------------------------

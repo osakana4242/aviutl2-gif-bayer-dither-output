@@ -378,6 +378,26 @@ bool func_output_avi(OUTPUT_INFO* oip) {
 //---------------------------------------------------------------------
 //	設定ダイアログ
 //---------------------------------------------------------------------
+
+void update_custom_ui(HWND hDlg, ColorMode mode)
+{
+	bool is_custom = (mode == ColorMode::Custom);
+
+	int ids[] = {
+		IDC_COLOR_COUNT_LABEL,
+		IDC_COLOR_COUNT_EDIT,
+		IDC_COLOR_COUNT_TEXT,
+
+		IDC_COLOR_SHIFT_LABEL,
+		IDC_COLOR_SHIFT_EDIT,
+		IDC_COLOR_SHIFT_TEXT
+	};
+
+	for (int id : ids) {
+		ShowWindow(GetDlgItem(hDlg, id), is_custom ? SW_SHOW : SW_HIDE);
+	}
+}
+
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 
@@ -410,6 +430,21 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		swprintf_s(buf, L"%.2f", g_config.bayerDither.strength);
 		SetDlgItemTextW(hDlg, IDC_STRENGTH_TEXT, buf);
 
+		// 色数
+		swprintf_s(buf, L"%d", g_config.bayerDither.color_count);
+		SetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf);
+
+		// シフト数
+		swprintf_s(buf, L"%d", g_config.bayerDither.color_shift);
+		SetDlgItemTextW(hDlg, IDC_COLOR_SHIFT_EDIT, buf);
+
+		// hoge（チェックボックス）
+		CheckDlgButton(hDlg, IDC_HOGE,
+			g_config.bayerDither.hoge ? BST_CHECKED : BST_UNCHECKED);
+
+		// Custom UI表示制御
+		update_custom_ui(hDlg, g_config.bayerDither.mode);
+
 		return TRUE;
 	}
 
@@ -429,22 +464,46 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
-
+		case IDC_MODE:
+		{
+			if (HIWORD(wParam) == CBN_SELCHANGE) {
+				int sel = (int)SendDlgItemMessage(hDlg, IDC_MODE, CB_GETCURSEL, 0, 0);
+				update_custom_ui(hDlg, (ColorMode)sel);
+			}
+			break;
+		}
 		case IDOK:
 		{
 
 			// モード
 			g_config.bayerDither.mode = (ColorMode)SendMessageW(
-					GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
+				GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
 
 			// Bayer
 			g_config.bayerDither.bayer = (BayerMode)SendMessageW(
-					GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
+				GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
 			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
 			int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
 			g_config.bayerDither.strength = pos / 100.0;
+
+			// 色数
+			wchar_t buf[32];
+			GetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf, 32);
+			g_config.bayerDither.color_count = std::clamp(_wtoi(buf), 1, 256);
+			swprintf_s(buf, L"%d", g_config.bayerDither.color_count);
+			SetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf);
+
+			// シフト数
+			GetDlgItemTextW(hDlg, IDC_COLOR_SHIFT_EDIT, buf, 32);
+			g_config.bayerDither.color_shift = std::clamp(_wtoi(buf), 0, 8);
+			swprintf_s(buf, L"%d", g_config.bayerDither.color_shift);
+			SetDlgItemTextW(hDlg, IDC_COLOR_SHIFT_EDIT, buf);
+
+			// hoge
+			g_config.bayerDither.hoge =
+				(IsDlgButtonChecked(hDlg, IDC_HOGE) == BST_CHECKED);
 
 			EndDialog(hDlg, IDOK);
 			return TRUE;

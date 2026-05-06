@@ -15,8 +15,19 @@
 
 #define IDD_CONFIG        100
 
-#define IDC_MODE          101
-#define IDC_BAYER         102
+#define IDC_MODE          110
+#define IDC_BAYER         120
 
-#define IDC_STRENGTH      103
-#define IDC_STRENGTH_TEXT 104
+#define IDC_STRENGTH      130
+#define IDC_STRENGTH_TEXT 131
+
+#define IDC_COLOR_COUNT_LABEL  140
+#define IDC_COLOR_COUNT_EDIT   141
+#define IDC_COLOR_COUNT_TEXT   142
+
+#define IDC_COLOR_SHIFT_LABEL  150
+#define IDC_COLOR_SHIFT_EDIT   151
+#define IDC_COLOR_SHIFT_TEXT   152
+
+#define IDC_HOGE               160
+
