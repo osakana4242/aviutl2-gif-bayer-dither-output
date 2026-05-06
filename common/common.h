@@ -9,13 +9,15 @@
 
 enum class ColorMode {
 	C256 = 0,
-	C16 = 1,
-	C8 = 2,
+	C216 = 1,
+	C16 = 2,
+	C8 = 3,
 	Count,
 };
 
 static const wchar_t* g_mode_display_names[] = {
 	L"パレット256色",
+	L"パレット216色",
 	L"パレット16色",
 	L"パレット8色"
 };
@@ -41,7 +43,15 @@ static const wchar_t* g_bayer_display_names[] = {
 static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
 	"bayer name mismatch");
 
-	//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+
+struct BayerDitherConfig {
+	ColorMode mode = ColorMode::C8;
+	BayerMode bayer = BayerMode::Bayer4x4;
+	float strength = 2.0;
+};
+
+//---------------------------------------------------------------------
 // パレット
 
 // パレット8
@@ -58,16 +68,46 @@ inline constexpr unsigned char palette_8[8][3] = {
 
 // パレット16
 inline constexpr unsigned char palette_16[16][3] = {
-	{0, 0, 0},       {128, 0, 0},   {0, 128, 0},   {128, 128, 0},
-	{0, 0, 128},     {128, 0, 128}, {0, 128, 128}, {192, 192, 192},
-	{128, 128, 128}, {255, 0, 0},   {0, 255, 0},   {255, 255, 0},
-	{0, 0, 255},     {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
+	{0, 0, 0},
+	{128, 0, 0},
+	{0, 128, 0},
+	{128, 128, 0},
+	{0, 0, 128},
+	{128, 0, 128},
+	{0, 128, 128},
+	{128, 128, 128},
+	{192, 192, 192},
+	{255, 0, 0},
+	{0, 255, 0},
+	{255, 255, 0},
+	{0, 0, 255},
+	{255, 0, 255},
+	{0, 255, 255},
+	{255, 255, 255}
 };
+
+// パレット216
+inline unsigned char palette_216[256][3] = {};
+
+inline void init_palette_216() {
+	int idx = 0;
+
+	for (int r = 0; r < 6; r++) {
+		for (int g = 0; g < 6; g++) {
+			for (int b = 0; b < 6; b++) {
+				palette_216[idx][0] = r * 51;
+				palette_216[idx][1] = g * 51;
+				palette_216[idx][2] = b * 51;
+				idx++;
+			}
+		}
+	}
+}
 
 // パレット256
 inline unsigned char palette_256[256][3] = {};
 
-inline void init_palette_websafe() {
+inline void init_palette_256() {
 	int idx = 0;
 
 	// ① WebSafe (216色)
@@ -102,7 +142,10 @@ inline void init_palette_websafe() {
 }
 
 struct PaletteInitializer {
-    PaletteInitializer() { init_palette_websafe(); }
+	PaletteInitializer() {
+		init_palette_216();
+		init_palette_256();
+	}
 };
 inline PaletteInitializer g_palette_initializer;
 
@@ -142,13 +185,13 @@ inline float get_bayer(BayerMode bayer, int x, int y) {
 
 template<size_t N>
 inline uint8_t quantize_index(
+	const BayerDitherConfig& config,
 	const unsigned char (&palette)[N][3],
 	int r, int g, int b,
-	int x, int y,
-	BayerMode bayer, float strength)
+	int x, int y)
 {
-	float d = get_bayer(bayer, x, y);
-	int offset = (int)std::roundf(d * 64.0f * strength);
+	float d = get_bayer(config.bayer, x, y);
+	int offset = (int)std::roundf(d * 64.0f * config.strength);
 
 	r = std::clamp(r + offset, 0, 255);
 	g = std::clamp(g + offset, 0, 255);
@@ -161,8 +204,8 @@ inline uint8_t quantize_index(
 		int dr = r - palette[i][0];
 		int dg = g - palette[i][1];
 		int db = b - palette[i][2];
-		// int dist = dr*dr + dg*dg + db*db;
-		int dist = 3*dr*dr + 6*dg*dg + 1*db*db; // にんげん向け. 緑の重みを強める.
+		int dist = dr*dr + dg*dg + db*db;
+		//int dist = 3*dr*dr + 6*dg*dg + 1*db*db; // にんげん向け. 緑の重みを強める.
 
 		if (dist < best_dist) {
 			best_dist = dist;
@@ -174,12 +217,13 @@ inline uint8_t quantize_index(
 
 template<size_t N>
 inline void quantize(
+	const BayerDitherConfig& config,
 	const unsigned char (&palette)[N][3],
 	int r, int g, int b,
-	int x, int y, BayerMode bayer, float strength,
+	int x, int y,
 	unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
 
-	auto best = quantize_index(palette, r, g, b, x, y, bayer, strength);
+	auto best = quantize_index(config, palette, r, g, b, x, y);
 
 	out_r = palette[best][0];
 	out_g = palette[best][1];
@@ -187,20 +231,23 @@ inline void quantize(
 }
 
 
-inline void quantize(ColorMode mode,
+inline void quantize(const BayerDitherConfig& config,
 		int r, int g, int b,
-		int x, int y, BayerMode bayer, float strength,
+		int x, int y,
 		unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
 
-	switch (mode) {
+	switch (config.mode) {
 	case ColorMode::C256:
-		quantize(palette_256, r, g, b, x, y, bayer, strength, out_r, out_g, out_b);
+		quantize(config, palette_256, r, g, b, x, y, out_r, out_g, out_b);
+		break;
+	case ColorMode::C216:
+		quantize(config, palette_216, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	case ColorMode::C16:
-		quantize(palette_16, r, g, b, x, y, bayer, strength, out_r, out_g, out_b);
+		quantize(config, palette_16, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	case ColorMode::C8:
-		quantize(palette_8, r, g, b, x, y, bayer, strength, out_r, out_g, out_b);
+		quantize(config, palette_8, r, g, b, x, y, out_r, out_g, out_b);
 		break;
 	default:
 		break;
@@ -209,23 +256,25 @@ inline void quantize(ColorMode mode,
 
 
 
-inline uint8_t quantize_index(ColorMode mode,
+inline uint8_t quantize_index(const BayerDitherConfig& config,
 															int r, int g, int b,
-															int x, int y, BayerMode bayer, float strength) {
-	switch (mode) {
+															int x, int y) {
+	switch (config.mode) {
 	case ColorMode::C256:
-		return quantize_index(palette_256, r, g, b, x, y, bayer, strength);
+		return quantize_index(config, palette_256, r, g, b, x, y);
+	case ColorMode::C216:
+		return quantize_index(config, palette_216, r, g, b, x, y);
 	case ColorMode::C16:
-		return quantize_index(palette_16, r, g, b, x, y, bayer, strength);
+		return quantize_index(config, palette_16, r, g, b, x, y);
 	case ColorMode::C8:
-		return quantize_index(palette_8, r, g, b, x, y, bayer, strength);
+		return quantize_index(config, palette_8, r, g, b, x, y);
 	default:
 		return 0;
 	}
 }
 
 
-inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, int stride, ColorMode mode, BayerMode bayer, float strength) {
+inline void convert_to_indexed(const BayerDitherConfig& config, uint8_t* src, uint8_t* dst, int w, int h, int stride) {
 	for (int y = 0; y < h; y++) {
 		int yy = h - 1 - y; // BMP上下反転
 		uint8_t* row = src + yy * stride;
@@ -237,15 +286,15 @@ inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, int str
 			uint8_t g = px[1];
 			uint8_t r = px[2];
 
-			uint8_t idx = quantize_index(mode, r, g, b, x, y, bayer, strength);
+			uint8_t idx = quantize_index(config, r, g, b, x, y);
 
 			dst[y * w + x] = idx;
 		}
 	}
 }
 
-inline void convert_to_indexed(uint8_t* src, uint8_t* dst, int w, int h, ColorMode mode, BayerMode bayer, float strength) {
+inline void convert_to_indexed(const BayerDitherConfig& config, uint8_t* src, uint8_t* dst, int w, int h) {
 	int stride = w * 3;
-	convert_to_indexed(src, dst, w, h, stride, mode, bayer, strength);
+	convert_to_indexed(config, src, dst, w, h, stride);
 }
 

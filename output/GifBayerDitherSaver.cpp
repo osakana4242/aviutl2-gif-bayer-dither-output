@@ -47,9 +47,7 @@ OUTPUT_PLUGIN_TABLE output_plugin_table = {
 // 設定構造体
 //---------------------------------------------------------------------
 struct CONFIG {
-	ColorMode mode = ColorMode::C8;
-	BayerMode bayer = BayerMode::Bayer4x4;
-	float strength = 2.0;
+	BayerDitherConfig bayerDither;
 };
 
 static CONFIG g_config;
@@ -71,9 +69,11 @@ ColorMapObject* create_palette(const unsigned char (&palette)[N][3]) {
 }
 
 ColorMapObject* create_palette() {
-	switch (g_config.mode) {
+	switch (g_config.bayerDither.mode) {
 	case ColorMode::C256:
 		return create_palette(palette_256);
+	case ColorMode::C216:
+		return create_palette(palette_216);
 	case ColorMode::C16:
 		return create_palette(palette_16);
 	case ColorMode::C8:
@@ -158,7 +158,7 @@ bool func_output(OUTPUT_INFO* oip) {
 
 		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
 
-		convert_to_indexed(src, indexed.data(), oip->w, oip->h, stride, g_config.mode, g_config.bayer, g_config.strength);
+		convert_to_indexed(g_config.bayerDither, src, indexed.data(), oip->w, oip->h, stride);
 
 		// 遅延
 		unsigned char gce[4];
@@ -192,7 +192,7 @@ void process_frame(uint8_t* data, int w, int h, int stride) {
 			uint8_t g = px[1];
 			uint8_t r = px[2];
 
-			quantize(g_config.mode, r, g, b, x, y, g_config.bayer, g_config.strength, r, g, b);
+			quantize(g_config.bayerDither, r, g, b, x, y, r, g, b);
 
 			px[0] = b;
 			px[1] = g;
@@ -325,7 +325,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			SendMessageW(hMode, CB_ADDSTRING, 0,
 				(LPARAM)g_mode_display_names[i]);
 		}
-		SendMessageW(hMode, CB_SETCURSEL, (int)g_config.mode, 0);
+		SendMessageW(hMode, CB_SETCURSEL, (int)g_config.bayerDither.mode, 0);
 
 		// Bayer
 		HWND hBayer = GetDlgItem(hDlg, IDC_BAYER);
@@ -333,16 +333,16 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			SendMessageW(hBayer, CB_ADDSTRING, 0,
 				(LPARAM)g_bayer_display_names[i]);
 		}
-		SendMessageW(hBayer, CB_SETCURSEL, (int)g_config.bayer, 0);
+		SendMessageW(hBayer, CB_SETCURSEL, (int)g_config.bayerDither.bayer, 0);
 
 		// スライダー
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
 		SendMessageW(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
-		SendMessageW(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.strength * 100));
+		SendMessageW(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.bayerDither.strength * 100));
 		SendMessageW(slider, TBM_SETTICFREQ, 10, 0); // 0.1刻みの目盛り
 
 		wchar_t buf[32];
-		swprintf_s(buf, L"%.2f", g_config.strength);
+		swprintf_s(buf, L"%.2f", g_config.bayerDither.strength);
 		SetDlgItemTextW(hDlg, IDC_STRENGTH_TEXT, buf);
 
 		return TRUE;
@@ -369,17 +369,17 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		{
 
 			// モード
-			g_config.mode = (ColorMode)SendMessageW(
+			g_config.bayerDither.mode = (ColorMode)SendMessageW(
 					GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
 
 			// Bayer
-			g_config.bayer = (BayerMode)SendMessageW(
+			g_config.bayerDither.bayer = (BayerMode)SendMessageW(
 					GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
 			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
 			int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
-			g_config.strength = pos / 100.0;
+			g_config.bayerDither.strength = pos / 100.0;
 
 			EndDialog(hDlg, IDOK);
 			return TRUE;
@@ -421,12 +421,12 @@ bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 LPCWSTR func_get_config_text() {
 	static wchar_t buf[256];
 
-	const wchar_t* mode = g_mode_display_names[(int)g_config.mode];
+	const wchar_t* mode = g_mode_display_names[(int)g_config.bayerDither.mode];
 
-	const wchar_t* bayer =g_bayer_display_names[(int)g_config.bayer];
+	const wchar_t* bayer =g_bayer_display_names[(int)g_config.bayerDither.bayer];
 
 	swprintf_s(buf, L"%s / Bayer %s / 強度 %.2f",
-						 mode, bayer, g_config.strength);
+						 mode, bayer, g_config.bayerDither.strength);
 
 	return buf;
 }

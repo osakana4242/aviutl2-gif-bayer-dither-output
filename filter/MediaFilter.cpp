@@ -75,13 +75,15 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 	video->get_image_data(buffer.get());
 
 	auto p = buffer.get();
-	double s = strength.value;
-	int bm = bayer_mode.value;
+	BayerDitherConfig config;
+	config.mode = (ColorMode)mode.value;
+	config.bayer = (BayerMode)bayer_mode.value;
+	config.strength = strength.value;
 
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
 			unsigned char r, g, b;
-			quantize((ColorMode)(int)mode.value, p->r, p->g, p->b, x, y, (BayerMode)bm, s, r, g, b);
+			quantize(config, p->r, p->g, p->b, x, y, r, g, b);
 			p->r = r;
 			p->g = g;
 			p->b = b;
