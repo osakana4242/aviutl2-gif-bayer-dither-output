@@ -58,31 +58,18 @@ static CONFIG g_config;
 
 //---------------------------------------------------------------------
 
-template<size_t N>
-ColorMapObject* create_palette(const unsigned char (&palette)[N][3]) {
-	auto* map = GifMakeMapObject(N, NULL);
+ColorMapObject* create_palette() {
+	const unsigned char (*palette)[3] = nullptr;
+	size_t size = get_palette(g_config.bayerDither, palette);
 
-	for (int i = 0; i < N; i++) {
+	auto* map = GifMakeMapObject(size, NULL);
+
+	for (int i = 0; i < size; i++) {
 		map->Colors[i].Red =   palette[i][0];
 		map->Colors[i].Green = palette[i][1];
 		map->Colors[i].Blue =  palette[i][2];
 	}
 	return map;
-}
-
-ColorMapObject* create_palette() {
-	switch (g_config.bayerDither.mode) {
-	case ColorMode::C256:
-		return create_palette(palette_256);
-	case ColorMode::C216:
-		return create_palette(palette_216);
-	case ColorMode::C16:
-		return create_palette(palette_16);
-	case ColorMode::C8:
-		return create_palette(palette_8);
-	default:
-		return nullptr;
-	}
 }
 
 //---------------------------------------------------------------------
@@ -127,6 +114,70 @@ inline int calc_stride(int w) {
 	return (w * 3 + 3) & ~3;
 }
 
+#include <unordered_map>
+#include <cstdint>
+
+std::vector<HistColor> collect_histogram(OUTPUT_INFO* oip, int w, int h, int stride) {
+
+	const int pixel_step = 1;
+	const int frame_step = 1;
+
+	std::unordered_map<uint32_t, uint32_t> map;
+	map.reserve(100000);
+
+	int shift = g_config.bayerDither.color_shift;
+
+	for (int frame = 0; frame < oip->n; frame += frame_step) {
+
+		if (oip->func_is_abort()) break;
+
+		uint8_t* src = (uint8_t*)oip->func_get_video(frame, BI_RGB);
+		if (!src) continue;
+
+		for (int y = 0; y < oip->h; y += pixel_step) {
+
+			uint8_t* row = src + y * stride;
+
+			for (int x = 0; x < oip->w; x += pixel_step) {
+
+				uint8_t* p = row + x * 3;
+
+				uint32_t key;
+				uint8_t r = p[2];
+				uint8_t g = p[1];
+				uint8_t b = p[0];
+				r >>= shift;
+				g >>= shift;
+				b >>= shift;
+
+				key =
+					(r << 16) |
+					(g << 8) |
+					b;
+
+				map[key]++;
+			}
+		}
+	}
+
+
+	// vectorに変換
+	std::vector<HistColor> hist;
+	hist.reserve(map.size());
+
+	for (auto&[k, cnt] : map) {
+		hist.push_back({
+				(uint8_t)(((uint8_t)(k >> 16)) << shift),
+				(uint8_t)(((uint8_t)(k >> 8)) << shift),
+				(uint8_t)(((uint8_t)(k)) << shift),
+				cnt
+									 });
+	}
+
+	return hist;
+}
+
+
 bool func_output(OUTPUT_INFO* oip) {
 
 	int error = 0;
@@ -135,6 +186,18 @@ bool func_output(OUTPUT_INFO* oip) {
 	if (!gif) return false;
 
 	int stride = calc_stride(oip->w);
+
+	if (g_config.bayerDither.mode == ColorMode::Custom) {
+		auto samples = collect_histogram(oip, oip->w, oip->h, stride);
+		auto palette = median_cut_histogram(samples, g_config.bayerDither.color_count);
+		palette_custom_size = g_config.bayerDither.color_count;
+		for (size_t i = 0; i < palette.size(); i++) {
+			palette_custom[i][0] = palette[i].r;
+			palette_custom[i][1] = palette[i].g;
+			palette_custom[i][2] = palette[i].b;
+		}
+	}
+
 	auto* palette = create_palette();
 
 	EGifPutScreenDesc(gif, oip->w, oip->h, 8, 0, palette);

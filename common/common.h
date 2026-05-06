@@ -54,6 +54,7 @@ struct BayerDitherConfig {
 	float strength = 2.0;
 	int hoge = 1;
 	int color_count = 16;
+	int color_shift = 0;
 };
 
 //---------------------------------------------------------------------

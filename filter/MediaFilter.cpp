@@ -80,7 +80,7 @@ EXTERN_C __declspec(dllexport) FILTER_PLUGIN_TABLE* GetFilterPluginTable(void) {
 #include <unordered_map>
 #include <cstdint>
 
-std::vector<HistColor> collect_histogram(PIXEL_RGBA* p, int w, int h) {
+std::vector<HistColor> collect_histogram(const BayerDitherConfig& config, PIXEL_RGBA* p, int w, int h) {
 
 	const int pixel_step = 2;
 	const int frame_step = 1;
@@ -88,7 +88,7 @@ std::vector<HistColor> collect_histogram(PIXEL_RGBA* p, int w, int h) {
 	std::unordered_map<uint32_t, uint32_t> map;
 	map.reserve(100000);
 
-	int shift = color_shift.value;
+	int shift = config.color_shift;
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
 			uint32_t key;
@@ -141,11 +141,12 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 	config.bayer = (BayerMode)bayer_mode.value;
 	config.strength = strength.value;
 	config.color_count = custom_color_count.value;
+	config.color_shift = color_shift.value;
 	config.hoge = (int)hoge.value;
 
 
 	if (config.mode == ColorMode::Custom) {
-		auto samples = collect_histogram(p, w, h);
+		auto samples = collect_histogram(config, p, w, h);
 		auto palette = median_cut_histogram(samples, config.color_count);
 		palette_custom_size = config.color_count;
 		for (size_t i = 0; i < palette.size(); i++) {
