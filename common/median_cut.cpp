@@ -84,6 +84,11 @@ static void split_box(const Box& box, Box& box1, Box& box2, const std::vector<Hi
 
 	size_t mid = split_by_weight(sorted, hist);
 
+	if (mid == 0 || mid >= sorted.size()) {
+		mid = sorted.size() / 2;
+		if (mid == 0) mid = 1;
+	}
+
 	box1.indices.assign(sorted.begin(), sorted.begin() + mid);
 	box2.indices.assign(sorted.begin() + mid, sorted.end());
 
@@ -113,6 +118,58 @@ static Color average_color(const Box& box, const std::vector<HistColor>& hist) {
 			(uint8_t)(r / total),
 			(uint8_t)(g / total),
 			(uint8_t)(b / total)
+	};
+}
+
+//--------------------------------
+// 重み付き中央値（1チャンネル）
+//--------------------------------
+static uint8_t weighted_median_channel(
+	const Box& box,
+	const std::vector<HistColor>& hist,
+	int ch) // 0=r,1=g,2=b
+{
+	if (box.indices.empty())
+		return 0; // or 適当な値
+
+	std::vector<std::pair<uint8_t, uint32_t>> v;
+	v.reserve(box.indices.size());
+
+	for (int idx : box.indices) {
+		const auto& c = hist[idx];
+		uint8_t val = (ch == 0) ? c.r :
+			(ch == 1) ? c.g : c.b;
+		v.emplace_back(val, c.count);
+	}
+
+	std::sort(v.begin(), v.end(),
+	         [](const auto& a, const auto& b) {
+		return a.first < b.first;
+	});
+
+	uint64_t total = 0;
+	for (auto& e : v) total += e.second;
+
+	uint64_t half = total / 2;
+
+	uint64_t acc = 0;
+	for (auto& e : v) {
+		acc += e.second;
+		if (acc >= half)
+			return e.first;
+	}
+
+	return v.back().first;
+}
+
+//--------------------------------
+// 中央値カラー
+//--------------------------------
+static Color median_color(const Box& box, const std::vector<HistColor>& hist) {
+	return {
+		weighted_median_channel(box, hist, 0),
+		weighted_median_channel(box, hist, 1),
+		weighted_median_channel(box, hist, 2)
 	};
 }
 
@@ -212,12 +269,20 @@ std::vector<Color> median_cut_histogram(const std::vector<HistColor>& hist, int 
 	std::vector<Color> palette;
 	palette.reserve(boxes.size());
 
-	for (auto& box : boxes) {
-		palette.push_back(average_color(box, hist));
+	// 平均値
+	if (false) {
+		for (auto& box : boxes) {
+			palette.push_back(average_color(box, hist));
+		}
+	} else {
+		// 中央値
+		for (auto& box : boxes) {
+			palette.push_back(median_color(box, hist));
+		}
 	}
 
 	// kmeans する前に上の Median Cut のクオリティがいまいちっぽい...
-	// kmeans_refine(palette, hist, 5);
+	kmeans_refine(palette, hist, 5);
 
 	return palette;
 }

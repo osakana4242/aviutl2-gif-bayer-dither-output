@@ -39,8 +39,9 @@ auto bayer_mode = FILTER_ITEM_SELECT(L"ベイヤーサイズ", (int)BayerMode::B
 auto custom_color_count = FILTER_ITEM_TRACK(L"カスタムパレット色数", 16, 1, 256, 1);
 
 auto hoge = FILTER_ITEM_TRACK(L"hoge", 0, 0, 1, 1);
+auto color_shift = FILTER_ITEM_TRACK(L"shift", 0, 0, 8, 1);
 
-void* items[] = { &mode, &bayer_mode, &custom_color_count, &hoge, nullptr };
+void* items[] = { &mode, &bayer_mode, &custom_color_count, &color_shift, &hoge, nullptr };
 
 //---------------------------------------------------------------------
 // プラグイン定義
@@ -87,22 +88,23 @@ std::vector<HistColor> collect_histogram(PIXEL_RGBA* p, int w, int h) {
 	std::unordered_map<uint32_t, uint32_t> map;
 	map.reserve(100000);
 
+	int shift = color_shift.value;
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
-			uint32_t key =
-				(p->r << 16) |
-				(p->g << 8) |
-				(p->b);
+			uint32_t key;
+			uint8_t r = p->r;
+			uint8_t g = p->g;
+			uint8_t b = p->b;
+			r >>= shift;
+			g >>= shift;
+			b >>= shift;
 
-			//uint8_t r = (p->r >> 1);
-			//uint8_t g = (p->g >> 1);
-			//uint8_t b = (p->b >> 1);
-			//uint32_t key =
-			//	(r << 10) |
-			//	(g << 5) |
-			//	b;
+			key =
+				(r << 16) |
+				(g << 8) |
+				b;
 
-				map[key]++;
+			map[key]++;
 			p++;
 		}
 	}
@@ -113,17 +115,11 @@ std::vector<HistColor> collect_histogram(PIXEL_RGBA* p, int w, int h) {
 
 	for (auto&[k, cnt] : map) {
 		hist.push_back({
-				(uint8_t)(k >> 16),
-				(uint8_t)(k >> 8),
-				(uint8_t)(k),
+				(uint8_t)(((uint8_t)(k >> 16)) << shift),
+				(uint8_t)(((uint8_t)(k >> 8)) << shift),
+				(uint8_t)(((uint8_t)(k)) << shift),
 				cnt
-		});
-		//hist.push_back({
-		//		(uint8_t)(((uint8_t)(k >> 10)) << 1),
-		//		(uint8_t)(((uint8_t)(k >> 5)) << 1),
-		//		(uint8_t)(((uint8_t)(k)) << 1),
-		//		cnt
-		//});
+									 });
 	}
 
 	return hist;
