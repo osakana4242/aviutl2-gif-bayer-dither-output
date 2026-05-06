@@ -9,20 +9,24 @@
 //---------------------------------------------------------------------
 
 enum class ColorMode {
-	C256 = 0,
-	C216 = 1,
-	C16 = 2,
-	C8 = 3,
-	Custom = 4,
+	Custom,
+	C2,
+	C4,
+	C8,
+	C16,
+	C216,
+	C256,
 	Count,
 };
 
 static const wchar_t* g_mode_display_names[] = {
-	L"パレット256色",
-	L"パレット216色",
-	L"パレット16色",
-	L"パレット8色",
 	L"カスタム",
+	L"パレット2色",
+	L"パレット4色",
+	L"パレット8色",
+	L"パレット16色",
+	L"パレット216色",
+	L"パレット256色",
 };
 
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
@@ -59,6 +63,20 @@ struct BayerDitherConfig {
 
 //---------------------------------------------------------------------
 // パレット
+
+// パレット2
+inline constexpr unsigned char palette_2[2][3] = {
+	{0, 0, 0},
+	{170, 170, 170}
+};
+
+// パレット4
+inline constexpr unsigned char palette_4[4][3] = {
+	{0, 0, 0},
+	{0, 170, 170},
+	{170, 0, 170},
+	{170, 170, 170}
+};
 
 // パレット8
 inline constexpr unsigned char palette_8[8][3] = {
@@ -173,6 +191,12 @@ inline size_t get_palette(const BayerDitherConfig& config, const unsigned char (
 	case ColorMode::C8:
 		palette =  palette_8;
 		return std::size(palette_8);
+	case ColorMode::C4:
+		palette =  palette_4;
+		return std::size(palette_4);
+	case ColorMode::C2:
+		palette =  palette_2;
+		return std::size(palette_2);
 	case ColorMode::Custom:
 		palette = palette_custom;
 		return palette_custom_size;
