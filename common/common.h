@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <iterator>
 #include "median_cut.h"
 
 //---------------------------------------------------------------------
@@ -157,6 +158,29 @@ struct PaletteInitializer {
 };
 inline PaletteInitializer g_palette_initializer;
 
+inline uint8_t get_palette(const BayerDitherConfig& config, const unsigned char (*&palette)[3]) {
+	switch (config.mode) {
+	case ColorMode::C256:
+		palette = palette_256;
+		return std::size(palette_256);
+	case ColorMode::C216:
+		palette = palette_216;
+		return std::size(palette_216);
+	case ColorMode::C16:
+		palette = palette_16;
+		return std::size(palette_16);
+	case ColorMode::C8:
+		palette =  palette_8;
+		return std::size(palette_8);
+	case ColorMode::Custom:
+		palette = palette_custom;
+		return palette_custom_size;
+	default:
+		palette = nullptr;
+		return 0;
+	}
+}
+
 //---------------------------------------------------------------------
 // Bayer
 
@@ -191,11 +215,10 @@ inline float get_bayer(BayerMode bayer, int x, int y) {
 //---------------------------------------------------------------------
 // quantize
 
-template<size_t N>
 inline uint8_t quantize_index(
 	const BayerDitherConfig& config,
-	const unsigned char (&palette)[N][3],
-	int count,
+	const unsigned char palette[][3],
+	size_t count,
 	int r, int g, int b,
 	int x, int y)
 {
@@ -213,9 +236,12 @@ inline uint8_t quantize_index(
 		int dr = r - palette[i][0];
 		int dg = g - palette[i][1];
 		int db = b - palette[i][2];
-		int dist = dr*dr + dg*dg + db*db;
+
+		int dist;
 		if (config.hoge == 1) {
 			dist = 3 * dr*dr + 6 * dg*dg + 1 * db*db; // にんげん向け. 緑の重みを強める.
+		} else {
+			dist = dr * dr + dg * dg + db * db;
 		}
 
 		if (dist < best_dist) {
@@ -226,10 +252,9 @@ inline uint8_t quantize_index(
 	return (uint8_t)best;
 }
 
-template<size_t N>
 inline void quantize(
 	const BayerDitherConfig& config,
-	const unsigned char (&palette)[N][3],
+	const unsigned char palette[][3],
 	int count,
 	int r, int g, int b,
 	int x, int y,
@@ -242,52 +267,27 @@ inline void quantize(
 	out_b = palette[best][2];
 }
 
-
 inline void quantize(const BayerDitherConfig& config,
 		int r, int g, int b,
 		int x, int y,
 		unsigned char& out_r, unsigned char& out_g, unsigned char& out_b) {
 
-	switch (config.mode) {
-	case ColorMode::C256:
-		quantize(config, palette_256, 256, r, g, b, x, y, out_r, out_g, out_b);
-		break;
-	case ColorMode::C216:
-		quantize(config, palette_216, 216, r, g, b, x, y, out_r, out_g, out_b);
-		break;
-	case ColorMode::C16:
-		quantize(config, palette_16, 16, r, g, b, x, y, out_r, out_g, out_b);
-		break;
-	case ColorMode::C8:
-		quantize(config, palette_8, 8, r, g, b, x, y, out_r, out_g, out_b);
-		break;
-	case ColorMode::Custom:
-		quantize(config, palette_custom, palette_custom_size, r, g, b, x, y, out_r, out_g, out_b);
-		break;
-	default:
-		break;
-	}
+	const unsigned char (*palette)[3] = nullptr;
+	auto size = get_palette(config, palette);
+	auto best = quantize_index(config, palette, size, r, g, b, x, y);
+
+	out_r = palette[best][0];
+	out_g = palette[best][1];
+	out_b = palette[best][2];
 }
-
-
 
 inline uint8_t quantize_index(const BayerDitherConfig& config,
 															int r, int g, int b,
 															int x, int y) {
-	switch (config.mode) {
-	case ColorMode::C256:
-		return quantize_index(config, palette_256, 256, r, g, b, x, y);
-	case ColorMode::C216:
-		return quantize_index(config, palette_216, 216, r, g, b, x, y);
-	case ColorMode::C16:
-		return quantize_index(config, palette_16, 16, r, g, b, x, y);
-	case ColorMode::C8:
-		return quantize_index(config, palette_8, 8, r, g, b, x, y);
-	case ColorMode::Custom:
-		return quantize_index(config, palette_custom,  palette_custom_size, r, g, b, x, y);
-	default:
-		return 0;
-	}
+
+	const unsigned char (*palette)[3] = nullptr;
+	auto size = get_palette(config, palette);
+	return quantize_index(config, palette, size, r, g, b, x, y);
 }
 
 
