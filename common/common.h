@@ -21,12 +21,12 @@ enum class ColorMode {
 
 static const wchar_t* g_mode_display_names[] = {
 	L"カスタム",
-	L"パレット2色",
-	L"パレット4色",
-	L"パレット8色",
-	L"パレット16色",
-	L"パレット216色",
-	L"パレット256色",
+	L"固定2色",
+	L"固定4色",
+	L"固定8色",
+	L"固定16色",
+	L"固定216色(Webセーフ)",
+	L"固定256色",
 };
 
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
@@ -43,12 +43,25 @@ enum class BayerMode {
 };
 
 static const wchar_t* g_bayer_display_names[] = {
-	L"Bayer 8x8",
-	L"Bayer 4x4",
+	L"8x8",
+	L"4x4",
 };
 
 static_assert((int)BayerMode::Count == _countof(g_bayer_display_names),
 	"bayer name mismatch");
+
+//---------------------------------------------------------------------
+
+static const wchar_t* g_color_shift_display_names[] = {
+	L"256",
+	L"128",
+	L"64",
+	L"32",
+	L"16",
+	L"8",
+	L"4",
+	L"2",
+};
 
 //---------------------------------------------------------------------
 
@@ -58,7 +71,7 @@ struct BayerDitherConfig {
 	float strength = 2.0;
 	int color_count = 16;
 	int color_shift = 3; // RGB各要素に適用する量子化シフト数. 0: 256段階, 3: 32段階(32768色), 4: 16段階(4096色), 5: 8段階(512色)
-	int hoge = 1; // にんげん向け色距離補正. 0: OFF, 1: ON
+	int perceptual_color_diff = 1; // にんげん向け色距離補正. 0: OFF, 1: ON
 };
 
 //---------------------------------------------------------------------
@@ -263,7 +276,7 @@ inline uint8_t quantize_index(
 		int db = b - palette[i][2];
 
 		int dist;
-		if (config.hoge == 1) {
+		if (config.perceptual_color_diff == 1) {
 			dist = 3 * dr*dr + 6 * dg*dg + 1 * db*db; // にんげん向け. 緑の重みを強める.
 		} else {
 			dist = dr * dr + dg * dg + db * db;

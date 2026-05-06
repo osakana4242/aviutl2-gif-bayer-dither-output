@@ -139,10 +139,10 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 	BayerDitherConfig config;
 	config.mode = (ColorMode)mode.value;
 	config.bayer = (BayerMode)bayer_mode.value;
-	config.strength = strength.value;
-	config.color_count = custom_color_count.value;
-	config.color_shift = color_shift.value;
-	config.hoge = (int)hoge.value;
+	config.strength = (float)strength.value;
+	config.color_count = (int)custom_color_count.value;
+	config.color_shift = (int)color_shift.value;
+	config.perceptual_color_diff = (int)hoge.value;
 
 
 	if (config.mode == ColorMode::Custom) {

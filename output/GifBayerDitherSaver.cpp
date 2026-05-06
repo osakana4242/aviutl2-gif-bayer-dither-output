@@ -385,12 +385,11 @@ void update_custom_ui(HWND hDlg, ColorMode mode)
 
 	int ids[] = {
 		IDC_COLOR_COUNT_LABEL,
+		IDC_COLOR_COUNT_SLIDER,
 		IDC_COLOR_COUNT_EDIT,
-		IDC_COLOR_COUNT_TEXT,
 
 		IDC_COLOR_SHIFT_LABEL,
-		IDC_COLOR_SHIFT_EDIT,
-		IDC_COLOR_SHIFT_TEXT
+		IDC_COLOR_SHIFT_COMBO,
 	};
 
 	for (int id : ids) {
@@ -398,11 +397,39 @@ void update_custom_ui(HWND hDlg, ColorMode mode)
 	}
 }
 
+float GetClampSetFloat(HWND hDlg, int id,
+											 float minVal, float maxVal, float step) {
+	wchar_t buf[32];
+	GetDlgItemTextW(hDlg, id, buf, 32);
+
+	// 変換
+	float val = (float)_wtof(buf);
+
+	// clamp
+	val = std::clamp(val, minVal, maxVal);
+
+	// step丸め（0.01刻みとか）
+	if (step > 0.0f) {
+		val = std::round(val / step) * step;
+	}
+
+	// 表示更新
+	if (step >= 1.0f) {
+		swprintf_s(buf, L"%d", (int)val);
+	} else {
+		swprintf_s(buf, L"%.2f", val);
+	}
+	SetDlgItemTextW(hDlg, id, buf);
+
+	return val;
+}
+
 INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 
 	case WM_INITDIALOG:
 	{
+		wchar_t buf[32];
 
 		// モード
 		HWND hMode = GetDlgItem(hDlg, IDC_MODE);
@@ -420,49 +447,89 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		}
 		SendMessageW(hBayer, CB_SETCURSEL, (int)g_config.bayerDither.bayer, 0);
 
-		// スライダー
-		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
+		// ベイヤー強度スライダー
+		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH_SLIDER);
 		SendMessageW(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
 		SendMessageW(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.bayerDither.strength * 100));
 		SendMessageW(slider, TBM_SETTICFREQ, 10, 0); // 0.1刻みの目盛り
 
-		wchar_t buf[32];
+		// ベイヤー強度EDIT
 		swprintf_s(buf, L"%.2f", g_config.bayerDither.strength);
-		SetDlgItemTextW(hDlg, IDC_STRENGTH_TEXT, buf);
+		SetDlgItemTextW(hDlg, IDC_STRENGTH_EDIT, buf);
 
-		// 色数
+		// 色数スライダー
+		HWND hColorSlider = GetDlgItem(hDlg, IDC_COLOR_COUNT_SLIDER);
+		SendMessageW(hColorSlider, TBM_SETRANGE, TRUE, MAKELPARAM(1, 256));
+		SendMessageW(hColorSlider, TBM_SETPOS, TRUE, g_config.bayerDither.color_count);
+
+		// 色数EDIT
 		swprintf_s(buf, L"%d", g_config.bayerDither.color_count);
 		SetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf);
 
 		// シフト数
-		swprintf_s(buf, L"%d", g_config.bayerDither.color_shift);
-		SetDlgItemTextW(hDlg, IDC_COLOR_SHIFT_EDIT, buf);
+		HWND hColorShiftCombo = GetDlgItem(hDlg, IDC_COLOR_SHIFT_COMBO);
+		for (int i = 0; i < 8; i++) {
+			SendMessageW(hColorShiftCombo, CB_ADDSTRING, 0,
+				(LPARAM)g_color_shift_display_names[i]);
+		}
+		SendMessageW(hColorShiftCombo, CB_SETCURSEL, (int)g_config.bayerDither.color_shift, 0);
+
+
 
 		// hoge（チェックボックス）
-		CheckDlgButton(hDlg, IDC_HOGE,
-			g_config.bayerDither.hoge ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hDlg, IDC_PERCEPTUAL_COLOR_DIFF_CHECK,
+			g_config.bayerDither.perceptual_color_diff ? BST_CHECKED : BST_UNCHECKED);
 
 		// Custom UI表示制御
 		update_custom_ui(hDlg, g_config.bayerDither.mode);
+
+
+
+
+
 
 		return TRUE;
 	}
 
 	case WM_HSCROLL:
 	{
-		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
-		int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
+		// 強度
+		if ((HWND)lParam == GetDlgItem(hDlg, IDC_STRENGTH_SLIDER)) {
+			int pos = (int)SendMessageW((HWND)lParam, TBM_GETPOS, 0, 0);
+			float val = pos / 100.0f;
 
-		float val = pos / 100.0f;
+			wchar_t buf[32];
+			swprintf_s(buf, L"%.2f", val);
+			SetDlgItemTextW(hDlg, IDC_STRENGTH_EDIT, buf);
+		}
 
-		wchar_t buf[32];
-		swprintf_s(buf, L"%.2f", val);
-		SetDlgItemTextW(hDlg, IDC_STRENGTH_TEXT, buf);
+		// 色数
+		if ((HWND)lParam == GetDlgItem(hDlg, IDC_COLOR_COUNT_SLIDER)) {
+			int val = (int)SendMessageW((HWND)lParam, TBM_GETPOS, 0, 0);
+
+			wchar_t buf[32];
+			swprintf_s(buf, L"%d", val);
+			SetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf);
+		}
 
 		return TRUE;
 	}
 
 	case WM_COMMAND:
+
+		int id = LOWORD(wParam);
+		int code = HIWORD(wParam);
+
+		if (code == EN_KILLFOCUS) {
+			switch (id) {
+			case IDC_STRENGTH_EDIT:
+			case IDC_COLOR_COUNT_EDIT:
+				GetClampSetFloat(hDlg, IDC_STRENGTH_EDIT, 0.0f, 2.0f, 0.01f);
+				GetClampSetFloat(hDlg, IDC_COLOR_COUNT_EDIT, 1.0f, 256.0f, 1.0f);
+				break;
+			}
+		}
+
 		switch (LOWORD(wParam)) {
 		case IDC_MODE:
 		{
@@ -474,6 +541,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		}
 		case IDOK:
 		{
+			wchar_t buf[32];
 
 			// モード
 			g_config.bayerDither.mode = (ColorMode)SendMessageW(
@@ -484,26 +552,18 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
-			HWND slider = GetDlgItem(hDlg, IDC_STRENGTH);
-			int pos = (int)SendMessageW(slider, TBM_GETPOS, 0, 0);
-			g_config.bayerDither.strength = pos / 100.0;
+			g_config.bayerDither.strength = GetClampSetFloat(hDlg, IDC_STRENGTH_EDIT, 0.0, 2.0, 0.01);
 
 			// 色数
-			wchar_t buf[32];
-			GetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf, 32);
-			g_config.bayerDither.color_count = std::clamp(_wtoi(buf), 1, 256);
-			swprintf_s(buf, L"%d", g_config.bayerDither.color_count);
-			SetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf);
+			g_config.bayerDither.color_count = GetClampSetFloat(hDlg, IDC_COLOR_COUNT_EDIT, 1, 256, 1);
 
 			// シフト数
-			GetDlgItemTextW(hDlg, IDC_COLOR_SHIFT_EDIT, buf, 32);
-			g_config.bayerDither.color_shift = std::clamp(_wtoi(buf), 0, 8);
-			swprintf_s(buf, L"%d", g_config.bayerDither.color_shift);
-			SetDlgItemTextW(hDlg, IDC_COLOR_SHIFT_EDIT, buf);
+			g_config.bayerDither.color_shift = (int)SendMessageW(
+				GetDlgItem(hDlg, IDC_COLOR_SHIFT_COMBO), CB_GETCURSEL, 0, 0);
 
 			// hoge
-			g_config.bayerDither.hoge =
-				(IsDlgButtonChecked(hDlg, IDC_HOGE) == BST_CHECKED);
+			g_config.bayerDither.perceptual_color_diff =
+				(IsDlgButtonChecked(hDlg, IDC_PERCEPTUAL_COLOR_DIFF_CHECK) == BST_CHECKED);
 
 			EndDialog(hDlg, IDOK);
 			return TRUE;
