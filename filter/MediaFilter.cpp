@@ -16,14 +16,17 @@ bool func_proc_video(FILTER_PROC_VIDEO *video);
 //---------------------------------------------------------------------
 // 設定項目
 //---------------------------------------------------------------------
-FILTER_ITEM_SELECT::ITEM mode_list[(int)ColorMode::Count] = {};
-auto mode = FILTER_ITEM_SELECT(L"カラーモード", (int)ColorMode::C16, mode_list);
-static struct ModeListInitializer{
+FILTER_ITEM_SELECT::ITEM mode_list[std::size(color_mode_models) + 1] = {};
+auto mode = FILTER_ITEM_SELECT(L"カラーモード", (int)ColorMode::Select16, mode_list);
+static struct ModeListInitializer {
 	ModeListInitializer() {
-		for ( int i = 0; i < (int)ColorMode::Count; i++) {
-			mode_list[i] = { g_mode_display_names[i], i };
+		int iCount = std::size(color_mode_models);
+		int i = 0;
+		for (i = 0; i < iCount; i++) {
+			const auto& model = color_mode_models[i];
+			mode_list[i] = { model.name, (int)model.id };
 		}
-		mode_list[(int)ColorMode::Count] = { nullptr };
+		mode_list[i] = { nullptr };
 	}
 } _mode_list_initializer;
 
@@ -38,10 +41,10 @@ auto bayer_mode = FILTER_ITEM_SELECT(L"ベイヤーサイズ", (int)BayerMode::B
 
 auto custom_color_count = FILTER_ITEM_TRACK(L"カスタムパレット色数", 16, 1, 256, 1);
 
-auto hoge = FILTER_ITEM_TRACK(L"hoge", 0, 0, 1, 1);
+auto perceptual_color_diff = FILTER_ITEM_TRACK(L"hoge", 0, 0, 1, 1);
 auto color_shift = FILTER_ITEM_TRACK(L"shift", 0, 0, 8, 1);
 
-void* items[] = { &mode, &bayer_mode, &custom_color_count, &color_shift, &hoge, nullptr };
+void* items[] = { &mode, &bayer_mode, &custom_color_count, &color_shift, &perceptual_color_diff, nullptr };
 
 //---------------------------------------------------------------------
 // プラグイン定義
@@ -137,15 +140,15 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 
 	auto p = buffer.get();
 	BayerDitherConfig config;
-	config.mode = (ColorMode)mode.value;
+	config.color_mode = (ColorMode)mode.value;
 	config.bayer = (BayerMode)bayer_mode.value;
 	config.strength = (float)strength.value;
 	config.color_count = (int)custom_color_count.value;
 	config.color_shift = (int)color_shift.value;
-	config.perceptual_color_diff = (int)hoge.value;
+	config.perceptual_color_diff = (int)perceptual_color_diff.value;
 
 
-	if (config.mode == ColorMode::Custom) {
+	if (config.color_mode == ColorMode::Custom) {
 		auto samples = collect_histogram(config, p, w, h);
 		auto palette = median_cut_histogram(samples, config.color_count);
 		palette_custom_size = config.color_count;

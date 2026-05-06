@@ -10,27 +10,39 @@
 
 enum class ColorMode {
 	Custom,
+	Select16,
+	Select256,
 	C2,
 	C4,
 	C8,
 	C16,
 	C216,
-	C256,
+	// C256,
 	Count,
 };
 
 static const wchar_t* g_mode_display_names[] = {
 	L"カスタム",
-	L"固定2色",
-	L"固定4色",
-	L"固定8色",
-	L"固定16色",
-	L"固定216色(Webセーフ)",
-	L"固定256色",
+	L"選択 16色",
+	L"選択 256色",
+	L"VGA 2色",
+	L"VGA 4色",
+	L"VGA 8色",
+	L"VGA 16色",
+	L"Webセーフ 216色",
+	// L"固定256色",
 };
 
 static_assert((int)ColorMode::Count == _countof(g_mode_display_names),
 	"mode name mismatch");
+
+struct ColorModeModel {
+	ColorMode id;
+	const wchar_t* name;
+	const unsigned char (*palette)[3];
+	int palette_size;
+};
+
 
 //---------------------------------------------------------------------
 // BayerMode
@@ -66,7 +78,7 @@ static const wchar_t* g_color_shift_display_names[] = {
 //---------------------------------------------------------------------
 
 struct BayerDitherConfig {
-	ColorMode mode = ColorMode::C8;
+	ColorMode color_mode = ColorMode::Select16;
 	BayerMode bayer = BayerMode::Bayer4x4;
 	float strength = 2.0;
 	int color_count = 16;
@@ -190,33 +202,33 @@ struct PaletteInitializer {
 };
 inline PaletteInitializer g_palette_initializer;
 
-inline size_t get_palette(const BayerDitherConfig& config, const unsigned char (*&palette)[3]) {
-	switch (config.mode) {
-	case ColorMode::C256:
-		palette = palette_256;
-		return std::size(palette_256);
-	case ColorMode::C216:
-		palette = palette_216;
-		return std::size(palette_216);
-	case ColorMode::C16:
-		palette = palette_16;
-		return std::size(palette_16);
-	case ColorMode::C8:
-		palette =  palette_8;
-		return std::size(palette_8);
-	case ColorMode::C4:
-		palette =  palette_4;
-		return std::size(palette_4);
-	case ColorMode::C2:
-		palette =  palette_2;
-		return std::size(palette_2);
-	case ColorMode::Custom:
-		palette = palette_custom;
-		return palette_custom_size;
-	default:
-		palette = nullptr;
-		return 0;
+ColorModeModel color_mode_models[] = {
+	{ColorMode::Custom , L"カスタム", nullptr, 0},
+	{ColorMode::Select16, L"選択16", nullptr, 16},
+	{ColorMode::Select256, L"選択256", nullptr, 256},
+	{ColorMode::C16, L"VGA16", palette_16, std::size(palette_16)},
+	{ColorMode::C216, L"Webセーフ216", palette_216, std::size(palette_216)},
+};
+
+const ColorModeModel* get_color_model(ColorMode id) {
+	for (int i = 0, iCount = std::size(color_mode_models); i < iCount; i++) {
+		const auto& item = color_mode_models[i];
+		if (item.id == id) return &item;
 	}
+	return nullptr;
+}
+
+inline size_t get_palette(const BayerDitherConfig& config, const unsigned char (*&palette)[3]) {
+	auto model = get_color_model(config.color_mode);
+	if (model->palette != nullptr) {
+		palette = model->palette;
+		return model->palette_size;
+	}
+	palette = palette_custom;
+	if (model->palette_size != 0) {
+		return model->palette_size;
+	}
+	return palette_custom_size;
 }
 
 //---------------------------------------------------------------------

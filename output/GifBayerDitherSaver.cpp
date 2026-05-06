@@ -187,7 +187,7 @@ bool func_output(OUTPUT_INFO* oip) {
 
 	int stride = calc_stride(oip->w);
 
-	if (g_config.bayerDither.mode == ColorMode::Custom) {
+	if (g_config.bayerDither.color_mode == ColorMode::Custom) {
 		auto samples = collect_histogram(oip, oip->w, oip->h, stride);
 		auto palette = median_cut_histogram(samples, g_config.bayerDither.color_count);
 		palette_custom_size = g_config.bayerDither.color_count;
@@ -433,11 +433,12 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 		// モード
 		HWND hMode = GetDlgItem(hDlg, IDC_MODE);
-		for (int i = 0; i < (int)ColorMode::Count; i++) {
+		for (int i = 0, iCount = std::size(color_mode_models); i < iCount; i++) {
+			const auto& item = color_mode_models[i];
 			SendMessageW(hMode, CB_ADDSTRING, 0,
-				(LPARAM)g_mode_display_names[i]);
+				(LPARAM)item.name);
 		}
-		SendMessageW(hMode, CB_SETCURSEL, (int)g_config.bayerDither.mode, 0);
+		SendMessageW(hMode, CB_SETCURSEL, (int)g_config.bayerDither.color_mode, 0);
 
 		// Bayer
 		HWND hBayer = GetDlgItem(hDlg, IDC_BAYER);
@@ -481,7 +482,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			g_config.bayerDither.perceptual_color_diff ? BST_CHECKED : BST_UNCHECKED);
 
 		// Custom UI表示制御
-		update_custom_ui(hDlg, g_config.bayerDither.mode);
+		update_custom_ui(hDlg, g_config.bayerDither.color_mode);
 
 
 
@@ -530,7 +531,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			}
 		}
 
-		switch (LOWORD(wParam)) {
+		switch (id) {
 		case IDC_MODE:
 		{
 			if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -544,8 +545,10 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			wchar_t buf[32];
 
 			// モード
-			g_config.bayerDither.mode = (ColorMode)SendMessageW(
+			auto modeIndex = SendMessageW(
 				GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
+
+			g_config.bayerDither.color_mode = color_mode_models[modeIndex].id;
 
 			// Bayer
 			g_config.bayerDither.bayer = (BayerMode)SendMessageW(
@@ -605,7 +608,7 @@ bool func_config(HWND hwnd, HINSTANCE dll_hinst) {
 LPCWSTR func_get_config_text() {
 	static wchar_t buf[256];
 
-	const wchar_t* mode = g_mode_display_names[(int)g_config.bayerDither.mode];
+	const wchar_t* mode = g_mode_display_names[(int)g_config.bayerDither.color_mode];
 
 	const wchar_t* bayer =g_bayer_display_names[(int)g_config.bayerDither.bayer];
 
