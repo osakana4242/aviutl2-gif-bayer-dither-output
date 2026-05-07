@@ -2,7 +2,18 @@
 
 #include <string>
 #include <iterator>
+#include "logger2.h"
 #include "median_cut.h"
+
+//---------------------------------------------------------------------
+// Logger
+//---------------------------------------------------------------------
+
+LOG_HANDLE* g_logger;
+
+EXTERN_C __declspec(dllexport) void InitializeLogger(LOG_HANDLE* logger) {
+	g_logger = logger;
+}
 
 //---------------------------------------------------------------------
 // ColoMode
