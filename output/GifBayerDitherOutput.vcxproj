@@ -24,7 +24,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Project</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
-    <ProjectName>GifBayerDitherSaver</ProjectName>
+    <ProjectName>GifBayerDitherOutput</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -187,7 +187,7 @@
   <ItemGroup>
     <ClCompile Include="..\common\common.cpp" />
     <ClCompile Include="..\common\median_cut.cpp" />
-    <ClCompile Include="GifBayerDitherSaver.cpp" />
+    <ClCompile Include="GifBayerDitherOutput.cpp" />
     <ClCompile Include="lib\giflib\lib\egif_lib.c" />
     <ClCompile Include="lib\giflib\lib\gifalloc.c" />
     <ClCompile Include="lib\giflib\lib\gif_err.c" />
