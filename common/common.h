@@ -210,18 +210,15 @@ const ColorModeModel* get_color_model(ColorMode id) {
 	for (int i = 0, iCount = std::size(g_color_mode_models); i < iCount; i++) {
 		auto& item = g_color_mode_models[i];
 		if (item.id == id) {
-			wchar_t buf[256];
-			wsprintf(buf, L"hit %d", id);
-			g_logger->log(g_logger, buf);
 			return &item;
 		}
 	}
 	{
 		wchar_t buf[256];
-		wsprintf(buf, L"no hit. size: %d", std::size(g_color_mode_models));
-		g_logger->log(g_logger, buf);
+		wsprintf(buf, L"ColorMode が見つからない, id: %d", id);
+		g_logger->error(g_logger, buf);
 	}
-	return nullptr;
+	return &g_color_mode_models[0];
 }
 
 inline size_t get_palette(const BayerDitherConfig& config, const unsigned char (*&palette)[3]) {

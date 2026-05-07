@@ -16,7 +16,7 @@
 
 IDD_CONFIG DIALOGEX 0, 0, 200, 180
 STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "ベイヤーディザ設定"
+CAPTION "GIFベイヤーディザ出力 設定"
 FONT 9, "Segoe UI"
 BEGIN
 	// --- カラーモード ---

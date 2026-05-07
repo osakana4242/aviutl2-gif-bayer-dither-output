@@ -388,12 +388,6 @@ bool func_output_avi(OUTPUT_INFO* oip) {
 void update_custom_ui(HWND hDlg, ColorMode mode)
 {
 	auto model = get_color_model(mode);
-	if (model == nullptr) {
-		wchar_t buf[32];
-		wsprintf(buf, L"mode: %d", mode);
-		g_logger->error(g_logger, buf);
-		return;
-	}
 
 	bool is_custom = (model->palette == nullptr && model->palette_size == 0);
 
