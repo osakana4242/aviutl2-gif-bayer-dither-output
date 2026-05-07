@@ -37,6 +37,7 @@ struct ColorModeModel {
 	const wchar_t* name;
 	const unsigned char (*palette)[3];
 	int palette_size;
+	int color_shift;
 };
 
 //---------------------------------------------------------------------
@@ -75,10 +76,10 @@ static const wchar_t* g_color_shift_display_names[] = {
 struct BayerDitherConfig {
 	ColorMode color_mode = ColorMode::Select16;
 	BayerMode bayer = BayerMode::Bayer4x4;
-	float strength = 2.0;
-	int color_count = 16;
-	int color_shift = 3; // RGB各要素に適用する量子化シフト数. 0: 256段階, 3: 32段階(32768色), 4: 16段階(4096色), 5: 8段階(512色)
-	int perceptual_color_diff = 1; // にんげん向け色距離補正. 0: OFF, 1: ON
+	float bayer_strength = 2.0;
+	int custom_palette_size = 16;
+	int custom_color_shift = 3; // RGB各要素に適用する量子化シフト数. 0: 256段階, 3: 32段階(32768色), 4: 16段階(4096色), 5: 8段階(512色)
+	int perceptual_color_diff = 1; // 知覚色差補正. 0: OFF, 1: ON
 };
 
 //---------------------------------------------------------------------
@@ -186,8 +187,7 @@ inline void init_palette_256() {
 }
 
 // パレットカスタム
-inline unsigned char palette_custom[256][3] = {};
-inline size_t palette_custom_size = 16;
+inline unsigned char g_palette_custom[256][3] = {};
 
 struct PaletteInitializer {
 	PaletteInitializer() {
@@ -197,18 +197,29 @@ struct PaletteInitializer {
 };
 inline PaletteInitializer g_palette_initializer;
 
-ColorModeModel color_mode_models[] = {
-	{ColorMode::Custom , L"カスタム", nullptr, 0},
-	{ColorMode::Select16, L"選択16", nullptr, 16},
-	{ColorMode::Select256, L"選択256", nullptr, 256},
-	{ColorMode::C16, L"VGA16", palette_16, std::size(palette_16)},
-	{ColorMode::C216, L"Webセーフ216", palette_216, std::size(palette_216)},
+const ColorModeModel g_color_mode_models[] = {
+	{ColorMode::Custom , L"カスタム", nullptr, 0, 0},
+	{ColorMode::Select16, L"選択16色", nullptr, 16, 3},
+	{ColorMode::Select256, L"選択256色", nullptr, 256, 3},
+	{ColorMode::C8, L"VGA8色", palette_8, std::size(palette_8), 0},
+	{ColorMode::C16, L"VGA16色", palette_16, std::size(palette_16), 0},
+	{ColorMode::C216, L"Webセーフ216色", palette_216, std::size(palette_216), 0},
 };
 
 const ColorModeModel* get_color_model(ColorMode id) {
-	for (int i = 0, iCount = std::size(color_mode_models); i < iCount; i++) {
-		const auto& item = color_mode_models[i];
-		if (item.id == id) return &item;
+	for (int i = 0, iCount = std::size(g_color_mode_models); i < iCount; i++) {
+		auto& item = g_color_mode_models[i];
+		if (item.id == id) {
+			wchar_t buf[256];
+			wsprintf(buf, L"hit %d", id);
+			g_logger->log(g_logger, buf);
+			return &item;
+		}
+	}
+	{
+		wchar_t buf[256];
+		wsprintf(buf, L"no hit. size: %d", std::size(g_color_mode_models));
+		g_logger->log(g_logger, buf);
 	}
 	return nullptr;
 }
@@ -219,11 +230,11 @@ inline size_t get_palette(const BayerDitherConfig& config, const unsigned char (
 		palette = model->palette;
 		return model->palette_size;
 	}
-	palette = palette_custom;
+	palette = g_palette_custom;
 	if (model->palette_size != 0) {
 		return model->palette_size;
 	}
-	return palette_custom_size;
+	return config.custom_palette_size;
 }
 
 //---------------------------------------------------------------------
@@ -268,7 +279,7 @@ inline uint8_t quantize_index(
 	int x, int y)
 {
 	float d = get_bayer(config.bayer, x, y);
-	int offset = (int)std::roundf(d * 64.0f * config.strength);
+	int offset = (int)std::roundf(d * 64.0f * config.bayer_strength);
 
 	r = std::clamp(r + offset, 0, 255);
 	g = std::clamp(g + offset, 0, 255);

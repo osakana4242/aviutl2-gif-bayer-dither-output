@@ -172,6 +172,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\common\common.h" />
+    <ClInclude Include="..\common\logger2.h" />
     <ClInclude Include="..\common\median_cut.h" />
     <ClInclude Include="filter2.h" />
     <ClInclude Include="framework.h" />

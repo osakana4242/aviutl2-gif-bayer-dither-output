@@ -16,14 +16,14 @@ bool func_proc_video(FILTER_PROC_VIDEO *video);
 //---------------------------------------------------------------------
 // 設定項目
 //---------------------------------------------------------------------
-FILTER_ITEM_SELECT::ITEM mode_list[std::size(color_mode_models) + 1] = {};
+FILTER_ITEM_SELECT::ITEM mode_list[std::size(g_color_mode_models) + 1] = {};
 auto mode = FILTER_ITEM_SELECT(L"カラーモード", (int)ColorMode::Select16, mode_list);
 static struct ModeListInitializer {
 	ModeListInitializer() {
-		int iCount = std::size(color_mode_models);
+		int iCount = std::size(g_color_mode_models);
 		int i = 0;
 		for (i = 0; i < iCount; i++) {
-			const auto& model = color_mode_models[i];
+			const auto& model = g_color_mode_models[i];
 			mode_list[i] = { model.name, (int)model.id };
 		}
 		mode_list[i] = { nullptr };
@@ -91,7 +91,12 @@ std::vector<HistColor> collect_histogram(const BayerDitherConfig& config, PIXEL_
 	std::unordered_map<uint32_t, uint32_t> map;
 	map.reserve(100000);
 
-	int shift = config.color_shift;
+	auto model = get_color_model(config.color_mode);
+	int shift = model->color_shift != 0 ?
+		model->color_shift :
+		config.custom_color_shift;
+
+
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
 			uint32_t key;
@@ -142,22 +147,22 @@ bool func_proc_video(FILTER_PROC_VIDEO *video) {
 	BayerDitherConfig config;
 	config.color_mode = (ColorMode)mode.value;
 	config.bayer = (BayerMode)bayer_mode.value;
-	config.strength = (float)strength.value;
-	config.color_count = (int)custom_color_count.value;
-	config.color_shift = (int)color_shift.value;
+	config.bayer_strength = (float)strength.value;
+	config.custom_palette_size = (int)custom_color_count.value;
+	config.custom_color_shift = (int)color_shift.value;
 	config.perceptual_color_diff = (int)perceptual_color_diff.value;
 
 	const auto model = get_color_model(config.color_mode);
 	if (model->palette == nullptr) {
 		auto samples = collect_histogram(config, p, w, h);
-		palette_custom_size = model->palette_size != 0 ?
+		auto palette_size = model->palette_size != 0 ?
 			model->palette_size :
-			config.color_count;
-		auto palette = median_cut_histogram(samples, palette_custom_size);
+			config.custom_palette_size;
+		auto palette = median_cut_histogram(samples, palette_size);
 		for (size_t i = 0; i < palette.size(); i++) {
-			palette_custom[i][0] = palette[i].r;
-			palette_custom[i][1] = palette[i].g;
-			palette_custom[i][2] = palette[i].b;
+			g_palette_custom[i][0] = palette[i].r;
+			g_palette_custom[i][1] = palette[i].g;
+			g_palette_custom[i][2] = palette[i].b;
 		}
 	}
 
