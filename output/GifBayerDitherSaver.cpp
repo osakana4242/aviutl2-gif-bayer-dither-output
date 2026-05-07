@@ -125,7 +125,10 @@ std::vector<HistColor> collect_histogram(OUTPUT_INFO* oip, int w, int h, int str
 	std::unordered_map<uint32_t, uint32_t> map;
 	map.reserve(100000);
 
-	int shift = g_config.bayerDither.color_shift;
+	auto model = get_color_model(g_config.bayerDither.color_mode);
+	int shift = model->color_shift != 0 ?
+		model->color_shift :
+		g_config.bayerDither.custom_color_shift;
 
 	for (int frame = 0; frame < oip->n; frame += frame_step) {
 		oip->func_rest_time_disp(frame, oip->n);
@@ -187,17 +190,17 @@ bool func_output(OUTPUT_INFO* oip) {
 
 	int stride = calc_stride(oip->w);
 
-	const auto model = get_color_model(g_config.bayerDither.color_mode);
+	auto model = get_color_model(g_config.bayerDither.color_mode);
 	if (model->palette == nullptr) {
 		auto samples = collect_histogram(oip, oip->w, oip->h, stride);
-		palette_custom_size = model->palette_size != 0 ?
+		auto palette_size = model->palette_size != 0 ?
 			model->palette_size :
-			g_config.bayerDither.color_count;
-		auto palette = median_cut_histogram(samples, palette_custom_size);
+			g_config.bayerDither.custom_palette_size;
+		auto palette = median_cut_histogram(samples, palette_size);
 		for (size_t i = 0; i < palette.size(); i++) {
-			palette_custom[i][0] = palette[i].r;
-			palette_custom[i][1] = palette[i].g;
-			palette_custom[i][2] = palette[i].b;
+			g_palette_custom[i][0] = palette[i].r;
+			g_palette_custom[i][1] = palette[i].g;
+			g_palette_custom[i][2] = palette[i].b;
 		}
 	}
 
@@ -384,7 +387,13 @@ bool func_output_avi(OUTPUT_INFO* oip) {
 
 void update_custom_ui(HWND hDlg, ColorMode mode)
 {
-	const auto model = get_color_model(g_config.bayerDither.color_mode);
+	auto model = get_color_model(mode);
+	if (model == nullptr) {
+		wchar_t buf[32];
+		wsprintf(buf, L"mode: %d", mode);
+		g_logger->error(g_logger, buf);
+		return;
+	}
 
 	bool is_custom = (model->palette == nullptr && model->palette_size == 0);
 
@@ -438,8 +447,8 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 		// モード
 		HWND hMode = GetDlgItem(hDlg, IDC_MODE);
-		for (int i = 0, iCount = std::size(color_mode_models); i < iCount; i++) {
-			const auto& item = color_mode_models[i];
+		for (int i = 0, iCount = std::size(g_color_mode_models); i < iCount; i++) {
+			const auto& item = g_color_mode_models[i];
 			SendMessageW(hMode, CB_ADDSTRING, 0,
 				(LPARAM)item.name);
 		}
@@ -456,43 +465,37 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		// ベイヤー強度スライダー
 		HWND slider = GetDlgItem(hDlg, IDC_STRENGTH_SLIDER);
 		SendMessageW(slider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 200)); // 0.0〜2.0
-		SendMessageW(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.bayerDither.strength * 100));
+		SendMessageW(slider, TBM_SETPOS, TRUE, (LPARAM)(g_config.bayerDither.bayer_strength * 100));
 		SendMessageW(slider, TBM_SETTICFREQ, 10, 0); // 0.1刻みの目盛り
 
 		// ベイヤー強度EDIT
-		swprintf_s(buf, L"%.2f", g_config.bayerDither.strength);
+		swprintf_s(buf, L"%.2f", g_config.bayerDither.bayer_strength);
 		SetDlgItemTextW(hDlg, IDC_STRENGTH_EDIT, buf);
 
 		// 色数スライダー
 		HWND hColorSlider = GetDlgItem(hDlg, IDC_COLOR_COUNT_SLIDER);
 		SendMessageW(hColorSlider, TBM_SETRANGE, TRUE, MAKELPARAM(1, 256));
-		SendMessageW(hColorSlider, TBM_SETPOS, TRUE, g_config.bayerDither.color_count);
+		SendMessageW(hColorSlider, TBM_SETPOS, TRUE, g_config.bayerDither.custom_palette_size);
 
 		// 色数EDIT
-		swprintf_s(buf, L"%d", g_config.bayerDither.color_count);
+		swprintf_s(buf, L"%d", g_config.bayerDither.custom_palette_size);
 		SetDlgItemTextW(hDlg, IDC_COLOR_COUNT_EDIT, buf);
 
-		// シフト数
+		// RGB階調
 		HWND hColorShiftCombo = GetDlgItem(hDlg, IDC_COLOR_SHIFT_COMBO);
 		for (int i = 0; i < 8; i++) {
 			SendMessageW(hColorShiftCombo, CB_ADDSTRING, 0,
 				(LPARAM)g_color_shift_display_names[i]);
 		}
-		SendMessageW(hColorShiftCombo, CB_SETCURSEL, (int)g_config.bayerDither.color_shift, 0);
+		SendMessageW(hColorShiftCombo, CB_SETCURSEL, (int)g_config.bayerDither.custom_color_shift, 0);
 
-
-
-		// hoge（チェックボックス）
+		// 知覚色差補正
 		CheckDlgButton(hDlg, IDC_PERCEPTUAL_COLOR_DIFF_CHECK,
 			g_config.bayerDither.perceptual_color_diff ? BST_CHECKED : BST_UNCHECKED);
+		ShowWindow(GetDlgItem(hDlg, IDC_PERCEPTUAL_COLOR_DIFF_CHECK), SW_HIDE);
 
 		// Custom UI表示制御
 		update_custom_ui(hDlg, g_config.bayerDither.color_mode);
-
-
-
-
-
 
 		return TRUE;
 	}
@@ -541,7 +544,7 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 		{
 			if (HIWORD(wParam) == CBN_SELCHANGE) {
 				int sel = (int)SendDlgItemMessage(hDlg, IDC_MODE, CB_GETCURSEL, 0, 0);
-				update_custom_ui(hDlg, (ColorMode)sel);
+				update_custom_ui(hDlg, g_color_mode_models[sel].id);
 			}
 			break;
 		}
@@ -553,20 +556,20 @@ INT_PTR CALLBACK ConfigDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 			auto modeIndex = SendMessageW(
 				GetDlgItem(hDlg, IDC_MODE), CB_GETCURSEL, 0, 0);
 
-			g_config.bayerDither.color_mode = color_mode_models[modeIndex].id;
+			g_config.bayerDither.color_mode = g_color_mode_models[modeIndex].id;
 
 			// Bayer
 			g_config.bayerDither.bayer = (BayerMode)SendMessageW(
 				GetDlgItem(hDlg, IDC_BAYER), CB_GETCURSEL, 0, 0);
 
 			// 強度
-			g_config.bayerDither.strength = GetClampSetFloat(hDlg, IDC_STRENGTH_EDIT, 0.0, 2.0, 0.01);
+			g_config.bayerDither.bayer_strength = GetClampSetFloat(hDlg, IDC_STRENGTH_EDIT, 0.0, 2.0, 0.01);
 
 			// 色数
-			g_config.bayerDither.color_count = GetClampSetFloat(hDlg, IDC_COLOR_COUNT_EDIT, 1, 256, 1);
+			g_config.bayerDither.custom_palette_size = GetClampSetFloat(hDlg, IDC_COLOR_COUNT_EDIT, 1, 256, 1);
 
 			// シフト数
-			g_config.bayerDither.color_shift = (int)SendMessageW(
+			g_config.bayerDither.custom_color_shift = (int)SendMessageW(
 				GetDlgItem(hDlg, IDC_COLOR_SHIFT_COMBO), CB_GETCURSEL, 0, 0);
 
 			// hoge
@@ -620,7 +623,7 @@ LPCWSTR func_get_config_text() {
 	const wchar_t* bayer =g_bayer_display_names[(int)g_config.bayerDither.bayer];
 
 	swprintf_s(buf, L"パレット %s / ベイヤーサイズ %s / 強度 %.2f",
-						 mode, bayer, g_config.bayerDither.strength);
+						 mode, bayer, g_config.bayerDither.bayer_strength);
 
 	return buf;
 }
