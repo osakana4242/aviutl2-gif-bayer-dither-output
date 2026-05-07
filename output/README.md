@@ -48,7 +48,8 @@
 
 1. `GifBayerDither-v1.0.0.zip` などを解凍
 2. `GifBayerDither.auo2` を実行中の
-   `AviUtl2.exe` のウィンドウにドラッグ＆ドロップ
+   `AviUtl2` のウィンドウにドラッグ＆ドロップ
+3. AviUtl2 のメニューに [ファイル - ファイル出力 - GIFベイヤーディザ出力] が追加される
 
 ## 比較に使用した動画素材
 
