@@ -18,7 +18,7 @@ AviUtl2 の出力プラグインです。
 ![](https://raw.githubusercontent.com/osakana4242/aviutl2_plugin/main/output/docs/x320_c256_other.gif)
 
 - ファイルサイズ: 4.871 MB
-- 「yu7400kiさんの[GIF出力プラグイン](https://yu7400ki.me/aviutl2-animated-image-output/)」による出力
+- yu7400ki さんの「[GIF出力プラグイン](https://yu7400ki.me/aviutl2-animated-image-output/)」による出力
 
 ### Webセーフ 216色
 
