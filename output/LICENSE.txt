@@ -1,21 +1,16 @@
-This file contains license information for this software and
-third-party components.
+このファイルには、本ソフトウェアおよび
+サードパーティ製ライブラリのライセンス情報を記載しています。
 
 --------------------------------------------------
-[GIFベイヤーディザ出力プラグイン]
-License: 0BSD
+[GIFベイヤーディザ出力(本ソフトウェア)]
 
-Copyright (c) 2026 Osakana Sankawa
+ライセンス: 0BSD
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS.
+Copyright (c) 2026 三川おさかな
 
 --------------------------------------------------
 [GIFLIB]
+
 The GIFLIB distribution is Copyright (c) 1997  Eric S. Raymond
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
