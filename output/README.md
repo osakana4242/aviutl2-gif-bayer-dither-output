@@ -2,8 +2,12 @@
 
 ![](https://raw.githubusercontent.com/osakana4242/aviutl2_plugin/main/output/docs/x320_vga_c8.gif)
 
-減色とベイヤーディザを適用した GIF を出力します。  
+AviUtl2 の出力プラグインです。
+減色とベイヤーディザを適用した GIF を出力します。
 画質を犠牲にファイルサイズを削減します。
+
+メニュー:  
+ファイル > ファイル出力 > GIFベイヤーディザ出力
 
 ## 画質・ファイルサイズの比較
 
@@ -49,7 +53,6 @@
 1. `GifBayerDither-v1.0.0.zip` などを解凍
 2. `GifBayerDither.auo2` を実行中の
    `AviUtl2` のウィンドウにドラッグ＆ドロップ
-3. AviUtl2 のメニューに [ファイル - ファイル出力 - GIFベイヤーディザ出力] が追加される
 
 ## 比較に使用した動画素材
 
@@ -63,5 +66,4 @@
 
 0BSD License
 
-詳細は [LICENSE.txt](https://raw.githubusercontent.com/osakana4242/aviutl2_plugin/main/output/LICENSE.txt) を参照してください。
-
+詳細は [LICENSE.txt](https://github.com/osakana4242/aviutl2_plugin/blob/main/output/LICENSE.txt) を参照してください。
