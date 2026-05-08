@@ -2,4 +2,7 @@
 
 ## [GIFベイヤーディザ出力](./output/)
 
-<img src="./output/docs/x320_vga_c8.gif">
+<img src="https://raw.githubusercontent.com/osakana4242/aviutl2_plugin/main/output/docs/x320_vga_c8.gif">
+
+
+
