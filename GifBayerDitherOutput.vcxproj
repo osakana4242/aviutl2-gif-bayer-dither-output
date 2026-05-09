@@ -161,7 +161,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib\giflib\lib;$(ProjectDir);$(ProjectDir)..\common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\src;$(ProjectDir)\src\common;$(ProjectDir)\lib\giflib\lib;$(ProjectDir)\lib\aviutl2_plugin_sdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -172,34 +172,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\common.h" />
-    <ClInclude Include="..\common\logger2.h" />
-    <ClInclude Include="..\common\median_cut.h" />
-    <ClInclude Include="framework.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\config2.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\filter2.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\input2.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\logger2.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\module2.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\output2.h" />
+    <ClInclude Include="lib\aviutl2_plugin_sdk\plugin2.h" />
     <ClInclude Include="lib\giflib\lib\gif_hash.h" />
     <ClInclude Include="lib\giflib\lib\gif_lib.h" />
     <ClInclude Include="lib\giflib\lib\gif_lib_private.h" />
-    <ClInclude Include="output2.h" />
-    <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="unistd.h" />
+    <ClInclude Include="src\common\common.h" />
+    <ClInclude Include="src\common\median_cut.h" />
+    <ClInclude Include="src\framework.h" />
+    <ClInclude Include="src\pch.h" />
+    <ClInclude Include="src\unistd.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\common\common.cpp" />
-    <ClCompile Include="..\common\median_cut.cpp" />
-    <ClCompile Include="GifBayerDitherOutput.cpp" />
     <ClCompile Include="lib\giflib\lib\egif_lib.c" />
     <ClCompile Include="lib\giflib\lib\gifalloc.c" />
     <ClCompile Include="lib\giflib\lib\gif_err.c" />
     <ClCompile Include="lib\giflib\lib\gif_hash.c" />
-    <ClCompile Include="lib\giflib\lib\openbsd-reallocarray.c" />
-    <ClCompile Include="lib\giflib\lib\quantize.c" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="src\common\common.cpp" />
+    <ClCompile Include="src\common\median_cut.cpp" />
+    <ClCompile Include="src\GifBayerDitherOutput.cpp" />
+    <ClCompile Include="src\pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
