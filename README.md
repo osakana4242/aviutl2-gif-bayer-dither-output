@@ -64,6 +64,11 @@ AviUtl2 の出力プラグインです。
 
 ## ライセンス
 
-0BSD License
+このソフトウェア本体は 0BSD ライセンスです。
 
-詳細は [LICENSE.txt](https://github.com/osakana4242/aviutl2_plugin/blob/main/output/LICENSE.txt) を参照してください。
+作者へのクレジット表記なしで、自由に使用・改変・再配布できます。
+
+また、このソフトウェアには giflib を使用しています。  
+詳細は
+[LICENSE.txt](https://github.com/osakana4242/aviutl2-gif-bayer-dither-output/blob/main/LICENSE.txt)
+を参照してください。
