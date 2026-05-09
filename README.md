@@ -68,7 +68,11 @@ AviUtl2 の出力プラグインです。
 
 作者へのクレジット表記なしで、自由に使用・改変・再配布できます。
 
-また、このソフトウェアには giflib を使用しています。  
+また、このソフトウェアは下記を使用しています。
+
+* AviUtl ExEdit2 Plugin SDK
+* giflib
+
 詳細は
 [LICENSE.txt](https://github.com/osakana4242/aviutl2-gif-bayer-dither-output/blob/main/LICENSE.txt)
 を参照してください。
