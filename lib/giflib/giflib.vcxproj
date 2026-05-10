@@ -194,7 +194,6 @@ _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     <ClCompile Include="giflib\gifinto.c" />
     <ClCompile Include="giflib\gifsponge.c" />
     <ClCompile Include="giflib\giftext.c" />
-    <ClCompile Include="giflib\giftool.c" />
     <ClCompile Include="giflib\gifwedge.c" />
     <ClCompile Include="giflib\gif_err.c" />
     <ClCompile Include="giflib\gif_font.c" />

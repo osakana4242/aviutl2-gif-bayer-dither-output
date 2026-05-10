@@ -95,9 +95,6 @@
     <ClCompile Include="giflib\giftext.c">
       <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="giflib\giftool.c">
-      <Filter>giflib</Filter>
-    </ClCompile>
     <ClCompile Include="giflib\gifwedge.c">
       <Filter>giflib</Filter>
     </ClCompile>
