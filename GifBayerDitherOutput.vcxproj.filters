@@ -27,13 +27,31 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lib\giflib\lib\gif_lib_private.h">
-      <Filter>lib\giflib\lib</Filter>
+    <ClInclude Include="resource\resource.h">
+      <Filter>リソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="src\framework.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="src\median_cut.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pch.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="src\unistd.h">
+      <Filter>ソース ファイル</Filter>
     </ClInclude>
     <ClInclude Include="lib\giflib\lib\gif_hash.h">
       <Filter>lib\giflib\lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\giflib\lib\gif_lib.h">
+      <Filter>lib\giflib\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\giflib\lib\gif_lib_private.h">
       <Filter>lib\giflib\lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\aviutl2_plugin_sdk\config2.h">
@@ -57,53 +75,41 @@
     <ClInclude Include="lib\aviutl2_plugin_sdk\plugin2.h">
       <Filter>lib\aviutl2_plugin_sdk</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>リソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="src\pch.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="src\unistd.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\common.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common\median_cut.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="src\framework.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\common.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GifBayerDitherOutput.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="src\median_cut.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pch.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="lib\giflib\lib\egif_lib.c">
       <Filter>lib\giflib\lib</Filter>
     </ClCompile>
     <ClCompile Include="lib\giflib\lib\gif_err.c">
       <Filter>lib\giflib\lib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\giflib\lib\gifalloc.c">
-      <Filter>lib\giflib\lib</Filter>
-    </ClCompile>
     <ClCompile Include="lib\giflib\lib\gif_hash.c">
       <Filter>lib\giflib\lib</Filter>
     </ClCompile>
-    <ClCompile Include="src\pch.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="lib\giflib\lib\gifalloc.c">
+      <Filter>lib\giflib\lib</Filter>
     </ClCompile>
-    <ClCompile Include="src\common\common.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="lib\giflib\lib\openbsd-reallocarray.c">
+      <Filter>lib\giflib\lib</Filter>
     </ClCompile>
-    <ClCompile Include="src\common\median_cut.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="src\GifBayerDitherOutput.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="lib\giflib\lib\quantize.c">
+      <Filter>lib\giflib\lib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resource.rc">
+    <ResourceCompile Include="resource\Resource.rc">
       <Filter>リソース ファイル</Filter>
     </ResourceCompile>
   </ItemGroup>
