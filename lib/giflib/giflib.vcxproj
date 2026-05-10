@@ -102,7 +102,7 @@
 _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib;$(ProjectDir)util;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)giflib;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
@@ -122,7 +122,7 @@ _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib;$(ProjectDir)util;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)giflib;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
@@ -140,7 +140,7 @@ _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib;$(ProjectDir)util;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)giflib;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
@@ -160,7 +160,7 @@ _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)lib;$(ProjectDir)util;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)giflib;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
@@ -171,20 +171,37 @@ _CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="lib\gif_hash.h" />
-    <ClInclude Include="lib\gif_lib.h" />
-    <ClInclude Include="lib\gif_lib_private.h" />
+    <ClInclude Include="giflib\getarg.h" />
+    <ClInclude Include="giflib\gif_hash.h" />
+    <ClInclude Include="giflib\gif_lib.h" />
+    <ClInclude Include="giflib\gif_lib_private.h" />
     <ClInclude Include="unistd.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lib\dgif_lib.c" />
-    <ClCompile Include="lib\egif_lib.c" />
-    <ClCompile Include="lib\gifalloc.c" />
-    <ClCompile Include="lib\gif_err.c" />
-    <ClCompile Include="lib\gif_font.c" />
-    <ClCompile Include="lib\gif_hash.c" />
-    <ClCompile Include="lib\openbsd-reallocarray.c" />
-    <ClCompile Include="lib\quantize.c" />
+    <ClCompile Include="giflib\dgif_lib.c" />
+    <ClCompile Include="giflib\egif_lib.c" />
+    <ClCompile Include="giflib\getarg.c" />
+    <ClCompile Include="giflib\gif2rgb.c" />
+    <ClCompile Include="giflib\gifalloc.c" />
+    <ClCompile Include="giflib\gifbg.c" />
+    <ClCompile Include="giflib\gifbuild.c" />
+    <ClCompile Include="giflib\gifclrmp.c" />
+    <ClCompile Include="giflib\gifcolor.c" />
+    <ClCompile Include="giflib\gifecho.c" />
+    <ClCompile Include="giflib\giffilter.c" />
+    <ClCompile Include="giflib\giffix.c" />
+    <ClCompile Include="giflib\gifhisto.c" />
+    <ClCompile Include="giflib\gifinto.c" />
+    <ClCompile Include="giflib\gifsponge.c" />
+    <ClCompile Include="giflib\giftext.c" />
+    <ClCompile Include="giflib\giftool.c" />
+    <ClCompile Include="giflib\gifwedge.c" />
+    <ClCompile Include="giflib\gif_err.c" />
+    <ClCompile Include="giflib\gif_font.c" />
+    <ClCompile Include="giflib\gif_hash.c" />
+    <ClCompile Include="giflib\openbsd-reallocarray.c" />
+    <ClCompile Include="giflib\qprintf.c" />
+    <ClCompile Include="giflib\quantize.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

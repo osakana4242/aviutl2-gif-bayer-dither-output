@@ -13,7 +13,7 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="lib">
+    <Filter Include="giflib">
       <UniqueIdentifier>{1cd0a6fb-39b2-4344-ab6d-0cc5dab27803}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -21,40 +21,91 @@
     <ClInclude Include="unistd.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="lib\gif_hash.h">
-      <Filter>lib</Filter>
+    <ClInclude Include="giflib\getarg.h">
+      <Filter>giflib</Filter>
     </ClInclude>
-    <ClInclude Include="lib\gif_lib.h">
-      <Filter>lib</Filter>
+    <ClInclude Include="giflib\gif_hash.h">
+      <Filter>giflib</Filter>
     </ClInclude>
-    <ClInclude Include="lib\gif_lib_private.h">
-      <Filter>lib</Filter>
+    <ClInclude Include="giflib\gif_lib.h">
+      <Filter>giflib</Filter>
+    </ClInclude>
+    <ClInclude Include="giflib\gif_lib_private.h">
+      <Filter>giflib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lib\dgif_lib.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\quantize.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\egif_lib.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\dgif_lib.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\gifalloc.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\egif_lib.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\gif_err.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\getarg.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\gif_font.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\gif_err.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\gif_hash.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\gif_font.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\openbsd-reallocarray.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\gif_hash.c">
+      <Filter>giflib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\quantize.c">
-      <Filter>lib</Filter>
+    <ClCompile Include="giflib\gif2rgb.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifalloc.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifbg.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifbuild.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifclrmp.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifcolor.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifecho.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\giffilter.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\giffix.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifhisto.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifinto.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifsponge.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\giftext.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\giftool.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\gifwedge.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\openbsd-reallocarray.c">
+      <Filter>giflib</Filter>
+    </ClCompile>
+    <ClCompile Include="giflib\qprintf.c">
+      <Filter>giflib</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
