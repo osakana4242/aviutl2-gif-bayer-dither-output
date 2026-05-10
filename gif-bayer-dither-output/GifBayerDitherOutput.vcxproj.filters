@@ -16,12 +16,6 @@
     <Filter Include="lib">
       <UniqueIdentifier>{93a822f2-096c-458f-9c51-49b2253c5b65}</UniqueIdentifier>
     </Filter>
-    <Filter Include="lib\giflib">
-      <UniqueIdentifier>{3323dcee-79cc-475a-970e-48ff9ebc96ec}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="lib\giflib\lib">
-      <UniqueIdentifier>{a152873d-b932-4584-889a-b5ce4d20300d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="lib\aviutl2_plugin_sdk">
       <UniqueIdentifier>{859b5180-a7a4-4ae7-be99-ea1feb448623}</UniqueIdentifier>
     </Filter>
@@ -41,18 +35,6 @@
     </ClInclude>
     <ClInclude Include="src\pch.h">
       <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="src\unistd.h">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\giflib\lib\gif_hash.h">
-      <Filter>lib\giflib\lib</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\giflib\lib\gif_lib.h">
-      <Filter>lib\giflib\lib</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\giflib\lib\gif_lib_private.h">
-      <Filter>lib\giflib\lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\aviutl2_plugin_sdk\config2.h">
       <Filter>lib\aviutl2_plugin_sdk</Filter>
@@ -88,24 +70,6 @@
     </ClCompile>
     <ClCompile Include="src\pch.cpp">
       <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\giflib\lib\egif_lib.c">
-      <Filter>lib\giflib\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\giflib\lib\gif_err.c">
-      <Filter>lib\giflib\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\giflib\lib\gif_hash.c">
-      <Filter>lib\giflib\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\giflib\lib\gifalloc.c">
-      <Filter>lib\giflib\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\giflib\lib\openbsd-reallocarray.c">
-      <Filter>lib\giflib\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\giflib\lib\quantize.c">
-      <Filter>lib\giflib\lib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

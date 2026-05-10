@@ -14,8 +14,6 @@
 
 @SET_MAKE@
 
-# GIFLIB utilities makefile
-
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,12 +89,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = gifbg$(EXEEXT) gifcolor$(EXEEXT) giffilter$(EXEEXT) \
-	gifhisto$(EXEEXT) gifsponge$(EXEEXT) gifwedge$(EXEEXT)
-bin_PROGRAMS = gif2rgb$(EXEEXT) gifbuild$(EXEEXT) gifecho$(EXEEXT) \
-	giffix$(EXEEXT) gifinto$(EXEEXT) giftext$(EXEEXT) \
-	giftool$(EXEEXT) gifclrmp$(EXEEXT)
-subdir = util
+subdir = lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -104,82 +97,52 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(include_HEADERS) \
+	$(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
-AM_V_AR = $(am__v_AR_@AM_V@)
-am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
-am__v_AR_0 = @echo "  AR      " $@;
-am__v_AR_1 = 
-libgetarg_a_AR = $(AR) $(ARFLAGS)
-libgetarg_a_LIBADD =
-am_libgetarg_a_OBJECTS = getarg.$(OBJEXT) qprintf.$(OBJEXT)
-libgetarg_a_OBJECTS = $(am_libgetarg_a_OBJECTS)
-am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
-am_gif2rgb_OBJECTS = gif2rgb.$(OBJEXT)
-gif2rgb_OBJECTS = $(am_gif2rgb_OBJECTS)
-gif2rgb_LDADD = $(LDADD)
-gif2rgb_DEPENDENCIES = libgetarg.a ../lib/libgif.la
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  test -z "$$files" \
+    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
+  }
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
+LTLIBRARIES = $(lib_LTLIBRARIES)
+libgif_la_LIBADD =
+am_libgif_la_OBJECTS = dgif_lib.lo egif_lib.lo gif_font.lo gif_hash.lo \
+	gifalloc.lo openbsd-reallocarray.lo gif_err.lo quantize.lo
+libgif_la_OBJECTS = $(am_libgif_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_gifbg_OBJECTS = gifbg.$(OBJEXT)
-gifbg_OBJECTS = $(am_gifbg_OBJECTS)
-gifbg_LDADD = $(LDADD)
-gifbg_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifbuild_OBJECTS = gifbuild.$(OBJEXT)
-gifbuild_OBJECTS = $(am_gifbuild_OBJECTS)
-gifbuild_LDADD = $(LDADD)
-gifbuild_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifclrmp_OBJECTS = gifclrmp.$(OBJEXT)
-gifclrmp_OBJECTS = $(am_gifclrmp_OBJECTS)
-gifclrmp_DEPENDENCIES = $(LDADD)
-am_gifcolor_OBJECTS = gifcolor.$(OBJEXT)
-gifcolor_OBJECTS = $(am_gifcolor_OBJECTS)
-gifcolor_LDADD = $(LDADD)
-gifcolor_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifecho_OBJECTS = gifecho.$(OBJEXT)
-gifecho_OBJECTS = $(am_gifecho_OBJECTS)
-gifecho_LDADD = $(LDADD)
-gifecho_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_giffilter_OBJECTS = giffilter.$(OBJEXT)
-giffilter_OBJECTS = $(am_giffilter_OBJECTS)
-giffilter_LDADD = $(LDADD)
-giffilter_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_giffix_OBJECTS = giffix.$(OBJEXT)
-giffix_OBJECTS = $(am_giffix_OBJECTS)
-giffix_LDADD = $(LDADD)
-giffix_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifhisto_OBJECTS = gifhisto.$(OBJEXT)
-gifhisto_OBJECTS = $(am_gifhisto_OBJECTS)
-gifhisto_LDADD = $(LDADD)
-gifhisto_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifinto_OBJECTS = gifinto.$(OBJEXT)
-gifinto_OBJECTS = $(am_gifinto_OBJECTS)
-gifinto_LDADD = $(LDADD)
-gifinto_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifsponge_OBJECTS = gifsponge.$(OBJEXT)
-gifsponge_OBJECTS = $(am_gifsponge_OBJECTS)
-gifsponge_LDADD = $(LDADD)
-gifsponge_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_giftext_OBJECTS = giftext.$(OBJEXT)
-giftext_OBJECTS = $(am_giftext_OBJECTS)
-giftext_LDADD = $(LDADD)
-giftext_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_giftool_OBJECTS = giftool.$(OBJEXT)
-giftool_OBJECTS = $(am_giftool_OBJECTS)
-giftool_LDADD = $(LDADD)
-giftool_DEPENDENCIES = libgetarg.a ../lib/libgif.la
-am_gifwedge_OBJECTS = gifwedge.$(OBJEXT)
-gifwedge_OBJECTS = $(am_gifwedge_OBJECTS)
-gifwedge_LDADD = $(LDADD)
-gifwedge_DEPENDENCIES = libgetarg.a ../lib/libgif.la
+libgif_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libgif_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -214,22 +177,14 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libgetarg_a_SOURCES) $(gif2rgb_SOURCES) $(gifbg_SOURCES) \
-	$(gifbuild_SOURCES) $(gifclrmp_SOURCES) $(gifcolor_SOURCES) \
-	$(gifecho_SOURCES) $(giffilter_SOURCES) $(giffix_SOURCES) \
-	$(gifhisto_SOURCES) $(gifinto_SOURCES) $(gifsponge_SOURCES) \
-	$(giftext_SOURCES) $(giftool_SOURCES) $(gifwedge_SOURCES)
-DIST_SOURCES = $(libgetarg_a_SOURCES) $(gif2rgb_SOURCES) \
-	$(gifbg_SOURCES) $(gifbuild_SOURCES) $(gifclrmp_SOURCES) \
-	$(gifcolor_SOURCES) $(gifecho_SOURCES) $(giffilter_SOURCES) \
-	$(giffix_SOURCES) $(gifhisto_SOURCES) $(gifinto_SOURCES) \
-	$(gifsponge_SOURCES) $(giftext_SOURCES) $(giftool_SOURCES) \
-	$(gifwedge_SOURCES)
+SOURCES = $(libgif_la_SOURCES)
+DIST_SOURCES = $(libgif_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+HEADERS = $(include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -367,28 +322,22 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-noinst_LIBRARIES = libgetarg.a
-EXTRA_DIST = Makefile.unx $(bin_SCRIPTS)
-LDADD = libgetarg.a ../lib/libgif.la
-AM_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/lib
-libgetarg_a_SOURCES = getarg.c getarg.h \
-                    qprintf.c
+EXTRA_DIST = Makefile.unx
+lib_LTLIBRARIES = libgif.la
+include_HEADERS = gif_lib.h
+libgif_la_SOURCES = dgif_lib.c  \
+                    egif_lib.c  \
+                    gif_font.c  \
+					gif_hash.c  \
+					gif_hash.h	\
+                    gifalloc.c  \
+		    openbsd-reallocarray.c \
+                    gif_err.c   \
+					gif_lib_private.h \
+		    quantize.c
 
-gifclrmp_SOURCES = gifclrmp.c
-gifclrmp_LDADD = $(LDADD) -lm
-gif2rgb_SOURCES = gif2rgb.c
-gifbg_SOURCES = gifbg.c
-gifbuild_SOURCES = gifbuild.c
-gifcolor_SOURCES = gifcolor.c
-gifecho_SOURCES = gifecho.c
-giffilter_SOURCES = giffilter.c
-giffix_SOURCES = giffix.c
-gifhisto_SOURCES = gifhisto.c
-gifinto_SOURCES = gifinto.c
-gifsponge_SOURCES = gifsponge.c
-giftext_SOURCES = giftext.c
-giftool_SOURCES = giftool.c
-gifwedge_SOURCES = gifwedge.c
+libgif_la_LDFLAGS = -no-undefined -version-info @SHLIBVERSION@
+libgif_CFLAGS = $(X_CFLAGS) $(AM_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -402,9 +351,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu util/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu lib/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu util/Makefile
+	  $(AUTOMAKE) --gnu lib/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -423,127 +372,43 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-
-libgetarg.a: $(libgetarg_a_OBJECTS) $(libgetarg_a_DEPENDENCIES) $(EXTRA_libgetarg_a_DEPENDENCIES) 
-	$(AM_V_at)-rm -f libgetarg.a
-	$(AM_V_AR)$(libgetarg_a_AR) libgetarg.a $(libgetarg_a_OBJECTS) $(libgetarg_a_LIBADD)
-	$(AM_V_at)$(RANLIB) libgetarg.a
-install-binPROGRAMS: $(bin_PROGRAMS)
+install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(bindir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(bindir)" || exit 1; \
-	fi; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p \
-	 || test -f $$p1 \
-	  ; then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' \
-	    -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	    } \
-	; done
+	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(libdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(libdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(libdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(libdir)"; \
+	}
 
-uninstall-binPROGRAMS:
+uninstall-libLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' \
-	`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$f"; \
+	done
 
-clean-binPROGRAMS:
-	@list='$(bin_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
+clean-libLTLIBRARIES:
+	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
+	@list='$(lib_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
 
-clean-noinstPROGRAMS:
-	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
-
-gif2rgb$(EXEEXT): $(gif2rgb_OBJECTS) $(gif2rgb_DEPENDENCIES) $(EXTRA_gif2rgb_DEPENDENCIES) 
-	@rm -f gif2rgb$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gif2rgb_OBJECTS) $(gif2rgb_LDADD) $(LIBS)
-
-gifbg$(EXEEXT): $(gifbg_OBJECTS) $(gifbg_DEPENDENCIES) $(EXTRA_gifbg_DEPENDENCIES) 
-	@rm -f gifbg$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifbg_OBJECTS) $(gifbg_LDADD) $(LIBS)
-
-gifbuild$(EXEEXT): $(gifbuild_OBJECTS) $(gifbuild_DEPENDENCIES) $(EXTRA_gifbuild_DEPENDENCIES) 
-	@rm -f gifbuild$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifbuild_OBJECTS) $(gifbuild_LDADD) $(LIBS)
-
-gifclrmp$(EXEEXT): $(gifclrmp_OBJECTS) $(gifclrmp_DEPENDENCIES) $(EXTRA_gifclrmp_DEPENDENCIES) 
-	@rm -f gifclrmp$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifclrmp_OBJECTS) $(gifclrmp_LDADD) $(LIBS)
-
-gifcolor$(EXEEXT): $(gifcolor_OBJECTS) $(gifcolor_DEPENDENCIES) $(EXTRA_gifcolor_DEPENDENCIES) 
-	@rm -f gifcolor$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifcolor_OBJECTS) $(gifcolor_LDADD) $(LIBS)
-
-gifecho$(EXEEXT): $(gifecho_OBJECTS) $(gifecho_DEPENDENCIES) $(EXTRA_gifecho_DEPENDENCIES) 
-	@rm -f gifecho$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifecho_OBJECTS) $(gifecho_LDADD) $(LIBS)
-
-giffilter$(EXEEXT): $(giffilter_OBJECTS) $(giffilter_DEPENDENCIES) $(EXTRA_giffilter_DEPENDENCIES) 
-	@rm -f giffilter$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(giffilter_OBJECTS) $(giffilter_LDADD) $(LIBS)
-
-giffix$(EXEEXT): $(giffix_OBJECTS) $(giffix_DEPENDENCIES) $(EXTRA_giffix_DEPENDENCIES) 
-	@rm -f giffix$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(giffix_OBJECTS) $(giffix_LDADD) $(LIBS)
-
-gifhisto$(EXEEXT): $(gifhisto_OBJECTS) $(gifhisto_DEPENDENCIES) $(EXTRA_gifhisto_DEPENDENCIES) 
-	@rm -f gifhisto$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifhisto_OBJECTS) $(gifhisto_LDADD) $(LIBS)
-
-gifinto$(EXEEXT): $(gifinto_OBJECTS) $(gifinto_DEPENDENCIES) $(EXTRA_gifinto_DEPENDENCIES) 
-	@rm -f gifinto$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifinto_OBJECTS) $(gifinto_LDADD) $(LIBS)
-
-gifsponge$(EXEEXT): $(gifsponge_OBJECTS) $(gifsponge_DEPENDENCIES) $(EXTRA_gifsponge_DEPENDENCIES) 
-	@rm -f gifsponge$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifsponge_OBJECTS) $(gifsponge_LDADD) $(LIBS)
-
-giftext$(EXEEXT): $(giftext_OBJECTS) $(giftext_DEPENDENCIES) $(EXTRA_giftext_DEPENDENCIES) 
-	@rm -f giftext$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(giftext_OBJECTS) $(giftext_LDADD) $(LIBS)
-
-giftool$(EXEEXT): $(giftool_OBJECTS) $(giftool_DEPENDENCIES) $(EXTRA_giftool_DEPENDENCIES) 
-	@rm -f giftool$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(giftool_OBJECTS) $(giftool_LDADD) $(LIBS)
-
-gifwedge$(EXEEXT): $(gifwedge_OBJECTS) $(gifwedge_DEPENDENCIES) $(EXTRA_gifwedge_DEPENDENCIES) 
-	@rm -f gifwedge$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(gifwedge_OBJECTS) $(gifwedge_LDADD) $(LIBS)
+libgif.la: $(libgif_la_OBJECTS) $(libgif_la_DEPENDENCIES) $(EXTRA_libgif_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libgif_la_LINK) -rpath $(libdir) $(libgif_la_OBJECTS) $(libgif_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -551,22 +416,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getarg.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif2rgb.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifbg.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifbuild.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifclrmp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifcolor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifecho.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/giffilter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/giffix.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifhisto.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifinto.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifsponge.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/giftext.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/giftool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifwedge.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qprintf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dgif_lib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/egif_lib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif_err.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif_font.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif_hash.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gifalloc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openbsd-reallocarray.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/quantize.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -594,6 +451,27 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-includeHEADERS: $(include_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
+	done
+
+uninstall-includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -679,9 +557,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -716,8 +594,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool \
-	clean-noinstLIBRARIES clean-noinstPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -737,13 +615,13 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-includeHEADERS
 
 install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-libLTLIBRARIES
 
 install-html: install-html-am
 
@@ -783,24 +661,25 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool \
-	clean-noinstLIBRARIES clean-noinstPROGRAMS cscopelist-am ctags \
+.PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
+	clean-libLTLIBRARIES clean-libtool cscopelist-am ctags \
 	ctags-am distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am \
+	install-includeHEADERS install-info install-info-am \
+	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
+	tags tags-am uninstall uninstall-am uninstall-includeHEADERS \
+	uninstall-libLTLIBRARIES
 
 .PRECIOUS: Makefile
 
