@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="lib">
-      <UniqueIdentifier>{93a822f2-096c-458f-9c51-49b2253c5b65}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="lib\aviutl2_plugin_sdk">
-      <UniqueIdentifier>{859b5180-a7a4-4ae7-be99-ea1feb448623}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource\resource.h">
@@ -35,27 +29,6 @@
     </ClInclude>
     <ClInclude Include="src\pch.h">
       <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\config2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\filter2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\input2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\logger2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\module2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\output2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\aviutl2_plugin_sdk\plugin2.h">
-      <Filter>lib\aviutl2_plugin_sdk</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

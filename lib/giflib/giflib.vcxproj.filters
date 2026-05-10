@@ -24,6 +24,9 @@
     <ClInclude Include="pch.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="unistd.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="lib\gif_hash.h">
       <Filter>lib</Filter>
     </ClInclude>
@@ -32,9 +35,6 @@
     </ClInclude>
     <ClInclude Include="lib\gif_lib_private.h">
       <Filter>lib</Filter>
-    </ClInclude>
-    <ClInclude Include="unistd.h">
-      <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -47,6 +47,9 @@
     <ClCompile Include="lib\egif_lib.c">
       <Filter>lib</Filter>
     </ClCompile>
+    <ClCompile Include="lib\gifalloc.c">
+      <Filter>lib</Filter>
+    </ClCompile>
     <ClCompile Include="lib\gif_err.c">
       <Filter>lib</Filter>
     </ClCompile>
@@ -54,9 +57,6 @@
       <Filter>lib</Filter>
     </ClCompile>
     <ClCompile Include="lib\gif_hash.c">
-      <Filter>lib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\gifalloc.c">
       <Filter>lib</Filter>
     </ClCompile>
     <ClCompile Include="lib\openbsd-reallocarray.c">

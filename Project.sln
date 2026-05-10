@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.37131.
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GifBayerDitherOutput", "gif-bayer-dither-output\GifBayerDitherOutput.vcxproj", "{D5450DF2-EFA7-476B-844C-774FE35CA160}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "giflib", "giflib\giflib.vcxproj", "{C109E0C0-D28B-4C5E-905E-A2EDBF21B18F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "giflib", "lib\giflib\giflib.vcxproj", "{C109E0C0-D28B-4C5E-905E-A2EDBF21B18F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
